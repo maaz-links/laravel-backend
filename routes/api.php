@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Route;
 
+Route::post('/upload/settings',[ApiController::class, 'apicreatesettings'])->name('createsettings');
 Route::post('/upload/single',[ApiController::class, 'apifileuploadsingle'])->name('fileuploadsingle');
 Route::post('/upload/multiple',[ApiController::class, 'apifileupload'])->name('fileupload');
 Route::post('/upload/attachments',[ApiController::class, 'apishowfiles'])->name('showfiles');

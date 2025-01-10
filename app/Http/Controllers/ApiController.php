@@ -9,6 +9,7 @@ use DB;
 use Illuminate\Http\Request;
 use Storage;
 use Validator;
+use FFMpeg\FFMpeg;
 class ApiController extends Controller
 {
     // Text Upload
@@ -108,6 +109,50 @@ class ApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'filesupload' => 'required|file|max:5120',
+            // 'expiry_date' => 'required|after:today',
+            // 'burn_after_read' => 'required|boolean',
+            'uid' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+
+        // $final_uid = $this->ApiControllerCheckUid($request->uid);
+        // $final_ip = $this->ApiControllerCheckIp($request);
+
+        
+        $fileSetting = FilesSettings::where('uid', $request->uid)->first();
+        if(!$fileSetting){
+            return response()->json(['message' => 'Terrible Code', 'fileSetting' => $fileSetting], 501);
+        }
+            $path = $request->file('filesupload')->store('uploads', 'public');
+
+        //Generating THumbnail
+        $mimeType = $request->file('filesupload')->getMimeType();
+        // Check if it's a video or image
+
+        if (strpos($mimeType, 'video/') === 0) {
+            $thumbnailPath = $this->generateThumbnail($path);
+        } elseif (strpos($mimeType, 'image/') === 0) {
+            $thumbnailPath = $path;
+        } else {
+            // For other file types
+            $thumbnailPath = null;
+        }
+
+            Securefile::create([
+                'file_detail' => $path,
+                'setting_id' => $fileSetting->id,
+                'thumbnail' => $thumbnailPath
+            ]);
+
+        return response()->json(['message' => 'One File uploaded successfully', 'uid' => $fileSetting->id], 201);
+ 
+    }
+    public function apicreatesettings(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
             'expiry_date' => 'required|after:today',
             'burn_after_read' => 'required|boolean',
             'uid' => 'required|string',
@@ -122,13 +167,7 @@ class ApiController extends Controller
 
         $storedsettings = $this->storeFileSettings($request, $final_uid, $final_ip, 2);
 
-            $path = $request->file('filesupload')->store('uploads', 'public');
-            Securefile::create([
-                'file_detail' => $path,
-                'setting_id' => $storedsettings->id,
-            ]);
-
-        return response()->json(['message' => 'One File uploaded successfully', 'uid' => $final_uid], 201);
+        return response()->json(['message' => 'Settings uploaded successfully', 'uid' => $final_uid], 201);
     }
 
     // Show Files
@@ -150,18 +189,15 @@ class ApiController extends Controller
     // Delete Files
     public function apideletefiles(Request $request, $given_uid = null)
     {
-        if (!$given_uid) {
-            return response()->json(['message' => 'Terrible Code'], 500);
+        // $data = $this->fetchData(Securefile::class, $given_uid);
+        $data = FilesSettings::where('uid', $given_uid)->first();
+        if (!$data) {
+            return response()->json(['message' => 'UID not found'], 400);
         }
-
-        $data = $this->fetchData(Securefile::class, $given_uid);
-
-        if ($data && $this->checkBlock($data)) {
+        if ($data['block']) {
             return $this->blockErrorResponse();
         }
-
-        $this->deleteFilesAndSettings($data, $given_uid);
-
+        $this->deleteFilesAndSettings($given_uid);
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
@@ -179,6 +215,19 @@ class ApiController extends Controller
     protected function checkBlock($data)
     {
         return $data->count() && $data[0]->block;
+    }
+
+    protected function generateThumbnail($filePath)
+    {
+        $ffmpeg = FFMpeg::create();
+        $video = $ffmpeg->open(storage_path('app/public/' . $filePath));
+
+        // Generate a thumbnail at the 1-second mark
+        $thumbnailPath = 'uploads/thumbnails/' . pathinfo($filePath, PATHINFO_FILENAME) . '.jpg';
+        //dd(storage_path('app/public/'.$thumbnailPath));
+        $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(1))->save(storage_path('app/public/'.$thumbnailPath));
+
+        return $thumbnailPath;
     }
 
     protected function validationErrorResponse($validator)
@@ -233,14 +282,21 @@ class ApiController extends Controller
             ->delete();
     }
 
-    protected function deleteFilesAndSettings($data, $uid)
+    protected function deleteFilesAndSettings($uid)
     {
-        foreach ($data as $d) {
+        $tablename = (new Securefile)->getTable();
+        //dd($uid,$tablename);
+        $toBedeleted = FilesSettings::rightJoin("{$tablename}", "{$tablename}.setting_id", '=', 'files_settings.id')->where('uid', $uid)->get();
+        //dd($toBedeleted);
+        foreach ($toBedeleted as $d) {
             if (isset($d['file_detail']) && Storage::disk('public')->exists($d['file_detail'])) {
                 Storage::disk('public')->delete($d['file_detail']);
             }
+            if (isset($d['thumbnail']) && Storage::disk('public')->exists($d['thumbnail'])) {
+                Storage::disk('public')->delete($d['thumbnail']);
+            }
         }
 
-        DB::table('files_settings')->where('uid', '=', $uid)->delete();
+        FilesSettings::where('uid', '=', $uid)->delete();
     }
 }

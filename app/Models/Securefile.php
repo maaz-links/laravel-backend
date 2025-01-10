@@ -9,7 +9,8 @@ class Securefile extends Model
     protected $table = 'securefile';
     protected $fillable = [
         'file_detail',
-        'setting_id'
+        'setting_id',
+        'thumbnail',
     ];
 
     public function files_settings()
