@@ -329,8 +329,8 @@ return [
         ],
         ['header' => 'account_settings'],
         [
-            'text' => 'Posts',
-            'url' => '/posts',
+            'text' => 'Mirrors',
+            'url' => '/securemirrors',
             'icon' => 'fas fa-fw fa-user',
         ],
         [

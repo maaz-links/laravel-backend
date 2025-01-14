@@ -8,6 +8,7 @@ class Securefile extends Model
 {
     protected $table = 'securefile';
     protected $fillable = [
+        'title',
         'file_detail',
         'setting_id',
         'thumbnail',

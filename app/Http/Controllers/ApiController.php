@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FilesSettings;
 use App\Models\Securefile;
 use App\Models\Securetext;
+use App\Models\Securemirror;
 use DB;
 use Illuminate\Http\Request;
 use Storage;
@@ -186,6 +187,60 @@ class ApiController extends Controller
         return response()->json(['data' => $data], 200);
     }
 
+    public function apipreviewfiles(Request $request, $given_uid = null)
+    {
+        $data = $this->fetchData(Securefile::class, $given_uid);
+        //dd($data); //$d['thumbnail']
+        $fileids = [];
+        $imageUrls = [];
+        // if ($data && $this->checkBlock($data)) {
+        //     return $this->blockErrorResponse();
+        // }
+        // if ($given_uid) {
+        //     $this->deleteBurnAfterRead($given_uid);
+        // }
+        foreach($data as $d){
+            //$fileids[] = $d['id'];
+            //$imageUrls[] = asset('storage/' . $d['thumbnail']);
+            $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
+        }
+        //return response()->json(['fileids' => $fileids, 'images' => $imageUrls], 200);
+        return response()->json(['data' => $data], 200);
+    }
+
+    public function apiupdatetitles(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:securefile,id',
+            'items.*.title' => 'required|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+        $updatedItems = [];
+        
+        foreach ($request->input('items') as $itemData) {
+            $item = Securefile::findOrFail($itemData['id']);
+            if($item){
+                $item->title = $itemData['title'];
+                $item->save();
+            }
+
+            $updatedItems[] = $item;
+        }
+        // if ($data && $this->checkBlock($data)) {
+        //     return $this->blockErrorResponse();
+        // }
+        // if ($given_uid) {
+        //     $this->deleteBurnAfterRead($given_uid);
+        // }
+        return response()->json([
+            'message' => 'Titles updated successfully',
+            'updatedItems' => $updatedItems,
+        ]);
+    }
+
     // Delete Files
     public function apideletefiles(Request $request, $given_uid = null)
     {
@@ -199,6 +254,12 @@ class ApiController extends Controller
         }
         $this->deleteFilesAndSettings($given_uid);
         return response()->json(['message' => 'Files deleted'], 200);
+    }
+
+    public function apigetmirrors(Request $request){
+        $securemirrors = Securemirror::get();
+        //dd($securemirrors);
+        return response()->json(['mirror' => $securemirrors], 200);
     }
 
     // Protected Functions for Reusability
