@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,6 +13,7 @@ class FilesSettings extends Model
         'expiry_date',
         'burn_after_read',
         'uid',
+        'password',
         'ip',
         'type',
         'typeintext',
@@ -33,6 +35,13 @@ class FilesSettings extends Model
         }else{
             return "None";
         }
+    }
+    protected function password(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string $value) => Crypt::decryptString($value),
+            set: fn (string $value) => Crypt::encryptString($value),
+        );
     }
     public function securefile()
     {

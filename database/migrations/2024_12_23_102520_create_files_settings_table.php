@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('files_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('expiry_date')->nullable();
-            $table->boolean('burn_after_read')->default(false);
+            $table->tinyInteger('burn_after_read')->default(false);
             $table->string('uid')->nullable();
             $table->timestamps();
         });

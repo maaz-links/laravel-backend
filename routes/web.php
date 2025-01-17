@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ApiController;
-
+use App\Http\Controllers\ExpirationDurationController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -15,6 +14,13 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::post('/home/{blockid}', [App\Http\Controllers\HomeController::class, 'blockChange'])->name('blocker');
 Route::get('/download/{fileurl}', [App\Http\Controllers\HomeController::class, 'GetURL'])->name('fileurl');
 Route::get('/posts', [App\Http\Controllers\HomeController::class, 'posts'])->name('posts');
+
+Route::get('expirationdurations', [ExpirationDurationController::class, 'index'])->name('expirationdurations.index');
+Route::get('expirationdurations/create', [ExpirationDurationController::class, 'create'])->name('expirationdurations.create');
+Route::post('expirationdurations', [ExpirationDurationController::class, 'store'])->name('expirationdurations.store');
+Route::get('expirationdurations/{id}/edit', [ExpirationDurationController::class, 'edit'])->name('expirationdurations.edit');
+Route::put('expirationdurations/{id}', [ExpirationDurationController::class, 'update'])->name('expirationdurations.update');
+Route::delete('expirationdurations/{id}', [ExpirationDurationController::class, 'destroy'])->name('expirationdurations.destroy');
 
 Route::resource('securemirrors', App\Http\Controllers\MirrorController::class);
 // GET /securemirrors – To view all secure mirrors.

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('files_settings', function (Blueprint $table) {
             $table->string('ip')->nullable();
-            $table->integer('type')->default(0);
-            $table->boolean('block')->default(0);
+            $table->tinyInteger('type')->default(0);
+            $table->tinyInteger('block')->default(0);
         });
     }
 

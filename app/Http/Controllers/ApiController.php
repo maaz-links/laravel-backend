@@ -6,7 +6,9 @@ use App\Models\FilesSettings;
 use App\Models\Securefile;
 use App\Models\Securetext;
 use App\Models\Securemirror;
+use App\Models\Expirationduration;
 use DB;
+use File;
 use Illuminate\Http\Request;
 use Storage;
 use Validator;
@@ -70,7 +72,7 @@ class ApiController extends Controller
             return $this->blockErrorResponse();
         }
 
-        $this->deleteFilesAndSettings($data, $given_uid);
+        $this->deleteFilesAndSettings($given_uid);
 
         return response()->json(['message' => 'Texts deleted'], 200);
     }
@@ -111,7 +113,7 @@ class ApiController extends Controller
         $validator = Validator::make($request->all(), [
             'filesupload' => 'required|file|max:5120',
             // 'expiry_date' => 'required|after:today',
-            // 'burn_after_read' => 'required|boolean',
+            //'file_burn_after_read' => 'required|boolean',
             'uid' => 'required|string',
         ]);
 
@@ -122,7 +124,6 @@ class ApiController extends Controller
         // $final_uid = $this->ApiControllerCheckUid($request->uid);
         // $final_ip = $this->ApiControllerCheckIp($request);
 
-        
         $fileSetting = FilesSettings::where('uid', $request->uid)->first();
         if(!$fileSetting){
             return response()->json(['message' => 'Terrible Code', 'fileSetting' => $fileSetting], 501);
@@ -143,6 +144,8 @@ class ApiController extends Controller
         }
 
             Securefile::create([
+                'file_burn_after_read' => $fileSetting->burn_after_read,
+                'file_uid' => str()->random(8),
                 'file_detail' => $path,
                 'setting_id' => $fileSetting->id,
                 'thumbnail' => $thumbnailPath
@@ -154,9 +157,11 @@ class ApiController extends Controller
     public function apicreatesettings(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'expiry_date' => 'required|after:today',
+            'expiry_date' => 'required|regex:/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)$/|after:today',
             'burn_after_read' => 'required|boolean',
-            'uid' => 'required|string',
+            'password' => 'nullable|string', //nullable is needed for empty field
+            'ip' => 'required|string',
+            //'uid' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -183,7 +188,31 @@ class ApiController extends Controller
         if ($given_uid) {
             $this->deleteBurnAfterRead($given_uid);
         }
+        foreach($data as $d){ //Reusable
+            $d['file_detail'] = basename($d['file_detail']);
+            $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
+        }
+        return response()->json(['data' => $data], 200);
+    }
 
+    public function apishowonefile(Request $request, $given_uid)
+    {
+        //$data = $this->fetchData(Securefile::class, $given_uid);
+        $table = (new Securefile)->getTable();
+        $data = Securefile::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
+        ->select("{$table}.*", 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
+        ->where('file_uid', '=', $given_uid)
+        ->get();
+        if ($data && $this->checkBlock($data)) {
+            return $this->blockErrorResponse();
+        }
+        if ($given_uid) {
+            $this->deleteBurnAfterRead($given_uid);
+        }
+        foreach($data as $d){ //Reusable
+            $d['file_detail'] = basename($d['file_detail']);
+            $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
+        }
         return response()->json(['data' => $data], 200);
     }
 
@@ -199,9 +228,10 @@ class ApiController extends Controller
         // if ($given_uid) {
         //     $this->deleteBurnAfterRead($given_uid);
         // }
-        foreach($data as $d){
+        foreach($data as $d){ //Reusable
             //$fileids[] = $d['id'];
             //$imageUrls[] = asset('storage/' . $d['thumbnail']);
+            $d['file_detail'] = basename($d['file_detail']);
             $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
         }
         //return response()->json(['fileids' => $fileids, 'images' => $imageUrls], 200);
@@ -240,6 +270,21 @@ class ApiController extends Controller
             'updatedItems' => $updatedItems,
         ]);
     }
+    public function apidownloadfile(Request $request){
+        $validator = Validator::make($request->all(), [
+            'fileid' => 'required|exists:securefile,id'
+        ]);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+        $filer = Securefile::findOrFail($request->fileid);
+        //dd(storage_path('app/public/' . $filer['file_detail']));
+        if($filer){
+            return response()->download(storage_path('app/public/' . $filer['file_detail']));
+        }else{
+            return response()->json(['message' => 'bruh'],501);
+        }
+    }
 
     // Delete Files
     public function apideletefiles(Request $request, $given_uid = null)
@@ -256,10 +301,10 @@ class ApiController extends Controller
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
-    public function apigetmirrors(Request $request){
+    public function apigetmirrorsexpiry(Request $request){
         $securemirrors = Securemirror::get();
-        //dd($securemirrors);
-        return response()->json(['mirror' => $securemirrors], 200);
+        $expirationduration = Expirationduration::get();
+        return response()->json(['mirror' => $securemirrors, 'expire' => $expirationduration], 200);
     }
 
     // Protected Functions for Reusability
@@ -280,6 +325,14 @@ class ApiController extends Controller
 
     protected function generateThumbnail($filePath)
     {
+        $dir = storage_path('app/public/uploads/thumbnails');
+
+        // Check if the directory exists
+        if (!File::exists($dir)) {
+            // Create the directory if it doesn't exist
+            File::makeDirectory($dir, 0755, true);
+        }
+
         $ffmpeg = FFMpeg::create();
         $video = $ffmpeg->open(storage_path('app/public/' . $filePath));
 
@@ -311,14 +364,24 @@ class ApiController extends Controller
         if ($fileSetting) {
             return $fileSetting;
         }
-
-        return FilesSettings::create([
-            'expiry_date' => strtotime($request->expiry_date),
-            'burn_after_read' => $request->burn_after_read,
-            'uid' => $uid,
-            'ip' => $ip,
-            'type' => $type,
-        ]);
+        if($request->password){
+            return FilesSettings::create([
+                'expiry_date' => strtotime($request->expiry_date),
+                'burn_after_read' => $request->burn_after_read,
+                'password' => $request->password,
+                'uid' => $uid,
+                'ip' => $ip,
+                'type' => $type,
+            ]);
+        }else{
+            return FilesSettings::create([
+                'expiry_date' => strtotime($request->expiry_date),
+                'burn_after_read' => $request->burn_after_read,
+                'uid' => $uid,
+                'ip' => $ip,
+                'type' => $type,
+            ]);
+        }
     }
 
     protected function fetchData($model, $uid)

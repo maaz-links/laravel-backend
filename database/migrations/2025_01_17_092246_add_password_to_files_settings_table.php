@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('securefile', function (Blueprint $table) {
-            $table->id();
-            $table->string('file_uid');
-            $table->tinyInteger('file_burn_after_read')->default(false);
-            $table->string('file_detail');
-            $table->timestamps();
+        Schema::table('files_settings', function (Blueprint $table) {
+            $table->longText('password')->after('uid')->nullable();
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('securefile');
+        Schema::table('files_settings', function (Blueprint $table) {
+            $table->dropColumn('password');
+        });
     }
 };
