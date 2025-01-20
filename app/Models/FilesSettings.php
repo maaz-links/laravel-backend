@@ -40,8 +40,8 @@ class FilesSettings extends Model
     protected function password(): Attribute
     {
         return Attribute::make(
-            get: fn(string $value) => Crypt::decryptString($value),
-            set: fn(string $value) => Crypt::encryptString($value),
+            get: fn($value) => $value ? Crypt::decryptString($value) : null,
+            set: fn($value) => $value ? Crypt::encryptString($value) : null,
         );
     }
     public function securefile()

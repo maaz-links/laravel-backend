@@ -16,7 +16,7 @@ use FFMpeg\FFMpeg;
 class ApiController extends Controller
 {
     // Text Upload
-    public function apitextupload(Request $request)
+    public function apiTextUpload(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'textupload' => 'required|string',
@@ -44,7 +44,7 @@ class ApiController extends Controller
     }
 
     // Show Texts
-    public function apishowtexts(Request $request, $given_uid = null)
+    public function apiShowTexts(Request $request, $given_uid = null)
     {
         $data = $this->fetchData(Securetext::class, $given_uid);
 
@@ -60,7 +60,7 @@ class ApiController extends Controller
     }
 
     // Delete Texts
-    public function apideletetexts(Request $request, $given_uid = null)
+    public function apiDeleteTexts(Request $request, $given_uid = null)
     {
         if (!$given_uid) {
             return response()->json(['message' => 'Terrible Code'], 500);
@@ -78,7 +78,7 @@ class ApiController extends Controller
     }
 
     // File Upload
-    public function apifileupload(Request $request)
+    public function apiFileUploadMultiple(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'filesupload' => 'required|array|min:1',
@@ -108,7 +108,7 @@ class ApiController extends Controller
         return response()->json(['message' => 'Files and settings uploaded successfully'], 201);
     }
 
-    public function apifileuploadsingle(Request $request)
+    public function apiFileUploadSingle(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'filesupload' => 'required|file|max:5120',
@@ -154,7 +154,7 @@ class ApiController extends Controller
         return response()->json(['message' => 'One File uploaded successfully', 'uid' => $fileSetting->id], 201);
 
     }
-    public function apicreatesettings(Request $request)
+    public function apiCreateSetting(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'expiry_date' => 'required|regex:/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)$/|after:today',
@@ -177,7 +177,7 @@ class ApiController extends Controller
     }
 
     // Show Files
-    public function apishowfiles(Request $request, $given_uid = null)
+    public function apiShowFiles(Request $request, $given_uid = null)
     {
         $validator = Validator::make($request->all(), [
             'requiredPassword' => 'nullable|string', //nullable is needed for empty field
@@ -228,7 +228,7 @@ class ApiController extends Controller
         return response()->json(['data' => $data], 200);
     }
 
-    public function apishowonefile(Request $request, $given_uid)
+    public function apiShowOneFile(Request $request, $given_uid)
     {
         $validator = Validator::make($request->all(), [
             'requiredPassword' => 'nullable|string', //nullable is needed for empty field
@@ -252,7 +252,6 @@ class ApiController extends Controller
         if (!$fileUID) {
             return response()->json(['message' => 'Terrible Code'], 501);
         }
-        //dd($request->requiredPassword,$fileUID->files_settings->password);
         if ($request->requiredPassword !== $fileUID->files_settings->password){
             return response()->json(['message' => 'Bad Password'], 404);
         }
@@ -282,7 +281,7 @@ class ApiController extends Controller
         return response()->json(['data' => $data], 200);
     }
 
-    public function apipreviewfiles(Request $request, $given_uid = null)
+    public function apiPreviewFiles(Request $request, $given_uid = null)
     {
         $data = $this->fetchData(Securefile::class, $given_uid);
         //dd($data); //$d['thumbnail']
@@ -304,7 +303,7 @@ class ApiController extends Controller
         return response()->json(['data' => $data], 200);
     }
 
-    public function apiupdatetitles(Request $request)
+    public function apiUpdateTitles(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'items' => 'required|array',
@@ -336,7 +335,7 @@ class ApiController extends Controller
             'updatedItems' => $updatedItems,
         ]);
     }
-    public function apidownloadfile(Request $request)
+    public function apiDownloadFile(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'fileid' => 'required|exists:securefile,id'
@@ -354,7 +353,7 @@ class ApiController extends Controller
     }
 
     // Delete Files
-    public function apideletefiles(Request $request, $given_uid = null)
+    public function apiDeleteMultipleFiles(Request $request, $given_uid = null)
     {
         // $data = $this->fetchData(Securefile::class, $given_uid);
         $data = FilesSettings::where('uid', $given_uid)->first();
@@ -368,7 +367,7 @@ class ApiController extends Controller
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
-    public function apideleteonefile(Request $request, $given_uid = null)
+    public function apiDeleteOnefile(Request $request, $given_uid = null)
     {
         $data = $this->fetchData(Securefile::class, $given_uid);
         $data = Securefile::where('file_uid', $given_uid)->first();
@@ -382,7 +381,7 @@ class ApiController extends Controller
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
-    public function apigetmirrorsexpiry(Request $request)
+    public function apiGetMirrorsExpiry(Request $request)
     {
         $securemirrors = Securemirror::get();
         $expirationduration = Expirationduration::get();
