@@ -15,6 +15,7 @@ Route::post('/download',[ApiController::class, 'apidownloadfile'])->name('downlo
 
 Route::post('/upload/attachsingle/{given_uid}',[ApiController::class, 'apishowonefile'])->name('showonefileuid');
 Route::post('/upload/attachments/{given_uid}',[ApiController::class, 'apishowfiles'])->name('showfilesuid');
+Route::delete('/upload/attachsingle/delete/{given_uid}',[ApiController::class, 'apideleteonefile'])->name('deleteonefileuid');
 Route::delete('/upload/attachments/delete/{given_uid}',[ApiController::class, 'apideletefiles'])->name('deletefilesuid');
 
 Route::get('/upload/mirrorsexpiry',[ApiController::class, 'apigetmirrorsexpiry'])->name('getmirrorsexpiry');

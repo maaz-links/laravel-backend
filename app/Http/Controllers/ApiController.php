@@ -125,10 +125,10 @@ class ApiController extends Controller
         // $final_ip = $this->ApiControllerCheckIp($request);
 
         $fileSetting = FilesSettings::where('uid', $request->uid)->first();
-        if(!$fileSetting){
+        if (!$fileSetting) {
             return response()->json(['message' => 'Terrible Code', 'fileSetting' => $fileSetting], 501);
         }
-            $path = $request->file('filesupload')->store('uploads', 'public');
+        $path = $request->file('filesupload')->store('uploads', 'public');
 
         //Generating THumbnail
         $mimeType = $request->file('filesupload')->getMimeType();
@@ -143,16 +143,16 @@ class ApiController extends Controller
             $thumbnailPath = null;
         }
 
-            Securefile::create([
-                'file_burn_after_read' => $fileSetting->burn_after_read,
-                'file_uid' => str()->random(8),
-                'file_detail' => $path,
-                'setting_id' => $fileSetting->id,
-                'thumbnail' => $thumbnailPath
-            ]);
+        Securefile::create([
+            'file_burn_after_read' => $fileSetting->burn_after_read,
+            'file_uid' => str()->random(8),
+            'file_detail' => $path,
+            'setting_id' => $fileSetting->id,
+            'thumbnail' => $thumbnailPath
+        ]);
 
         return response()->json(['message' => 'One File uploaded successfully', 'uid' => $fileSetting->id], 201);
- 
+
     }
     public function apicreatesettings(Request $request)
     {
@@ -179,16 +179,49 @@ class ApiController extends Controller
     // Show Files
     public function apishowfiles(Request $request, $given_uid = null)
     {
+        $validator = Validator::make($request->all(), [
+            'requiredPassword' => 'nullable|string', //nullable is needed for empty field
+        ]);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+
+        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->first();
+        if (!$fileSetting) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
+        }
+        if ($request->requiredPassword !== $fileSetting->password){
+            return response()->json(['message' => 'Bad Password'], 404);
+        }
+
+        if ($fileSetting->burn_after_read > 1) {
+            //dd('del');
+            $fileSetting->delete();
+            return response()->json(['message' => 'UID doesnt exist, burned'], 404);
+        }
+
+
         $data = $this->fetchData(Securefile::class, $given_uid);
 
         if ($data && $this->checkBlock($data)) {
             return $this->blockErrorResponse();
         }
 
-        if ($given_uid) {
-            $this->deleteBurnAfterRead($given_uid);
+        // If Settings burn > 1, update to 2 and also update burn of securefiles
+        if ($fileSetting->burn_after_read > 0) {
+            $fileSetting->update(['burn_after_read' => $fileSetting->burn_after_read + 1]);
+            $fileSetting->securefile->each(function ($securefile){
+                $securefile->update(['file_burn_after_read' => 2]);
+            });
         }
-        foreach($data as $d){ //Reusable
+        // if ($given_uid) {
+        //     $this->deleteBurnAfterRead($given_uid);
+        // }
+        $data->each(function ($item) {
+            // Add custom attributes
+            $item->file_location = asset('storage/' . $item->file_detail); // Replace with actual logic or value
+        });
+        foreach ($data as $d) { //Reusable
             $d['file_detail'] = basename($d['file_detail']);
             $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
         }
@@ -197,19 +230,52 @@ class ApiController extends Controller
 
     public function apishowonefile(Request $request, $given_uid)
     {
+        $validator = Validator::make($request->all(), [
+            'requiredPassword' => 'nullable|string', //nullable is needed for empty field
+        ]);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+
+        
         //$data = $this->fetchData(Securefile::class, $given_uid);
         $table = (new Securefile)->getTable();
         $data = Securefile::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
-        ->select("{$table}.*", 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
-        ->where('file_uid', '=', $given_uid)
-        ->get();
+            ->select("{$table}.*", 'files_settings.password', 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
+            ->where('file_uid', '=', $given_uid) //no fetchData() bcz file_uid
+            ->get();
+        if (!$data->count()) {
+            return response()->json(['message' => 'FileUID doesnt exist'], 404);
+        }
+
+        $fileUID = Securefile::where('file_uid', '=', $given_uid)->first();
+        if (!$fileUID) {
+            return response()->json(['message' => 'Terrible Code'], 501);
+        }
+        //dd($request->requiredPassword,$fileUID->files_settings->password);
+        if ($request->requiredPassword !== $fileUID->files_settings->password){
+            return response()->json(['message' => 'Bad Password'], 404);
+        }
+        if ($fileUID->file_burn_after_read > 1) {
+            $fileUID->delete();
+            return response()->json(['message' => 'FileUID doesnt exist, burned'], 404);
+        }
+
         if ($data && $this->checkBlock($data)) {
             return $this->blockErrorResponse();
         }
-        if ($given_uid) {
-            $this->deleteBurnAfterRead($given_uid);
+        if ($fileUID->file_burn_after_read > 0) {
+            //dd($data);
+            $fileUID->update(['file_burn_after_read' => $fileUID->file_burn_after_read + 1]);
         }
-        foreach($data as $d){ //Reusable
+        // if ($given_uid) {
+        //     $this->deleteBurnAfterRead($given_uid);
+        // }
+        $data->each(function ($item) {
+            // Add custom attributes
+            $item->file_location = asset('storage/' . $item->file_detail); // Replace with actual logic or value
+        });
+        foreach ($data as $d) { //Reusable
             $d['file_detail'] = basename($d['file_detail']);
             $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
         }
@@ -228,7 +294,7 @@ class ApiController extends Controller
         // if ($given_uid) {
         //     $this->deleteBurnAfterRead($given_uid);
         // }
-        foreach($data as $d){ //Reusable
+        foreach ($data as $d) { //Reusable
             //$fileids[] = $d['id'];
             //$imageUrls[] = asset('storage/' . $d['thumbnail']);
             $d['file_detail'] = basename($d['file_detail']);
@@ -243,16 +309,16 @@ class ApiController extends Controller
         $validator = Validator::make($request->all(), [
             'items' => 'required|array',
             'items.*.id' => 'required|exists:securefile,id',
-            'items.*.title' => 'required|string|max:255',
+            'items.*.title' => 'nullable|string|max:255',
         ]);
         if ($validator->fails()) {
             return $this->validationErrorResponse($validator);
         }
         $updatedItems = [];
-        
+
         foreach ($request->input('items') as $itemData) {
             $item = Securefile::findOrFail($itemData['id']);
-            if($item){
+            if ($item) {
                 $item->title = $itemData['title'];
                 $item->save();
             }
@@ -270,7 +336,8 @@ class ApiController extends Controller
             'updatedItems' => $updatedItems,
         ]);
     }
-    public function apidownloadfile(Request $request){
+    public function apidownloadfile(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'fileid' => 'required|exists:securefile,id'
         ]);
@@ -279,10 +346,10 @@ class ApiController extends Controller
         }
         $filer = Securefile::findOrFail($request->fileid);
         //dd(storage_path('app/public/' . $filer['file_detail']));
-        if($filer){
+        if ($filer) {
             return response()->download(storage_path('app/public/' . $filer['file_detail']));
-        }else{
-            return response()->json(['message' => 'bruh'],501);
+        } else {
+            return response()->json(['message' => 'bruh'], 501);
         }
     }
 
@@ -301,7 +368,22 @@ class ApiController extends Controller
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
-    public function apigetmirrorsexpiry(Request $request){
+    public function apideleteonefile(Request $request, $given_uid = null)
+    {
+        $data = $this->fetchData(Securefile::class, $given_uid);
+        $data = Securefile::where('file_uid', $given_uid)->first();
+        if (!$data) {
+            return response()->json(['message' => 'UID not found'], 400);
+        }
+        if ($data['block']) {
+            return $this->blockErrorResponse();
+        }
+        $this->deleteFilesAndSettings($given_uid);
+        return response()->json(['message' => 'Files deleted'], 200);
+    }
+
+    public function apigetmirrorsexpiry(Request $request)
+    {
         $securemirrors = Securemirror::get();
         $expirationduration = Expirationduration::get();
         return response()->json(['mirror' => $securemirrors, 'expire' => $expirationduration], 200);
@@ -339,7 +421,7 @@ class ApiController extends Controller
         // Generate a thumbnail at the 1-second mark
         $thumbnailPath = 'uploads/thumbnails/' . pathinfo($filePath, PATHINFO_FILENAME) . '.jpg';
         //dd(storage_path('app/public/'.$thumbnailPath));
-        $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(1))->save(storage_path('app/public/'.$thumbnailPath));
+        $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(1))->save(storage_path('app/public/' . $thumbnailPath));
 
         return $thumbnailPath;
     }
@@ -364,7 +446,7 @@ class ApiController extends Controller
         if ($fileSetting) {
             return $fileSetting;
         }
-        if($request->password){
+        if ($request->password) {
             return FilesSettings::create([
                 'expiry_date' => strtotime($request->expiry_date),
                 'burn_after_read' => $request->burn_after_read,
@@ -373,7 +455,7 @@ class ApiController extends Controller
                 'ip' => $ip,
                 'type' => $type,
             ]);
-        }else{
+        } else {
             return FilesSettings::create([
                 'expiry_date' => strtotime($request->expiry_date),
                 'burn_after_read' => $request->burn_after_read,
@@ -385,18 +467,18 @@ class ApiController extends Controller
     }
 
     protected function fetchData($model, $uid)
-{
-    $table = (new $model)->getTable(); // Get the table name dynamically
+    {
+        $table = (new $model)->getTable(); // Get the table name dynamically
 
-    return $uid
-        ? $model::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
-            ->select("{$table}.*", 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
-            ->where('uid', '=', $uid)
-            ->get()
-        : $model::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
-            ->select("{$table}.*", 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid')
-            ->get();
-}
+        return $uid
+            ? $model::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
+                ->select("{$table}.*", 'files_settings.password', 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
+                ->where('uid', '=', $uid)
+                ->get()
+            : $model::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
+                ->select("{$table}.*", 'files_settings.password', 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
+                ->get();
+    }
 
     protected function deleteBurnAfterRead($uid)
     {

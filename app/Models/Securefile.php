@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Storage;
 
 class Securefile extends Model
 {
@@ -14,9 +15,25 @@ class Securefile extends Model
         'file_detail',
         'setting_id',
         'thumbnail',
-    //    'size',
+        //    'size',
     ];
 
+    protected static function booted()
+    {
+        static::deleting(function ($model) {
+            if ($model->file_detail) {
+                if (Storage::disk('public')->exists($model->file_detail)) {
+                    Storage::disk('public')->delete($model->file_detail);
+                }
+            }
+            //dd('ok');
+            if ($model->thumbnail) {
+                if (Storage::disk('public')->exists($model->thumbnail)) {
+                    Storage::disk('public')->delete($model->thumbnail);
+                }
+            }
+        });
+    }
     // protected function fileDetail(): Attribute //productName == product_name
     // {
     //     return Attribute::make(
@@ -32,6 +49,6 @@ class Securefile extends Model
 
     public function files_settings()
     {
-        return $this->belongsTo(FilesSettings::class);
+        return $this->belongsTo(FilesSettings::class,'setting_id');
     }
 }
