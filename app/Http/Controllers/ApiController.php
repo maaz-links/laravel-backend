@@ -36,6 +36,7 @@ class ApiController extends Controller
 
         $storedsettings = $this->storeFileSettings($request, $final_uid, $final_ip, 1);
 
+        //Remember, files are encrypted and decrypted in Securetext Model
         Securetext::create([
             'content' => $request->textupload,
             'setting_id' => $storedsettings->id,
@@ -47,38 +48,41 @@ class ApiController extends Controller
     // Show Texts
     public function apiShowTexts(Request $request, $given_uid)
     {
+        //Validate password string and check if record for given UID exists
         $validator = Validator::make($request->all(), [
-            'requiredPassword' => 'nullable|string', //nullable is needed for empty field
+            'requiredPassword' => 'nullable|string', //nullable is needed for empty field, dont use required
         ]);
         if ($validator->fails()) {
             return $this->validationErrorResponse($validator);
         }
-        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->where('type','=',1)->first();
+        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->where('type', '=', 1)->first();
         if (!$fileSetting) {
             return response()->json(['message' => 'UID doesnt exist'], 404);
         }
-        if ($request->requiredPassword !== $fileSetting->password){
+        if ($request->requiredPassword !== $fileSetting->password) {
             return response()->json(['message' => 'Bad Password'], 404);
         }
-        
+
         $data = $this->fetchData(Securetext::class, $given_uid);
         if ($data && $this->checkBlock($data)) {
             return $this->blockErrorResponse();
         }
 
-        if ($given_uid) {
-            $this->deleteBurnAfterRead($given_uid);
+        //Burn record if burn_after_read is 1
+        if($fileSetting->burn_after_read){
+            $fileSetting->delete();
         }
 
         return response()->json(['data' => $data], 200);
     }
-    
+
 
     // Delete Texts
-    public function apiDeleteTexts(Request $request, $given_uid = null)
+    public function apiDeleteTexts(Request $request, $given_uid)
     {
-        if (!$given_uid) {
-            return response()->json(['message' => 'Terrible Code'], 500);
+        $FileSetting = FilesSettings::where('uid', '=', $given_uid)->first();
+        if (!$FileSetting) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
         }
 
         $data = $this->fetchData(Securetext::class, $given_uid);
@@ -86,10 +90,9 @@ class ApiController extends Controller
         if ($data && $this->checkBlock($data)) {
             return $this->blockErrorResponse();
         }
-
-        $this->deleteFilesAndSettings($given_uid);
-
+        $FileSetting->delete();
         return response()->json(['message' => 'Texts deleted'], 200);
+        
     }
 
     // File Upload
@@ -127,7 +130,6 @@ class ApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'filesupload' => 'required|file|max:5120',
-            // 'expiry_date' => 'required|after:today',
             //'file_burn_after_read' => 'required|boolean',
             'uid' => 'required|string',
         ]);
@@ -136,12 +138,10 @@ class ApiController extends Controller
             return $this->validationErrorResponse($validator);
         }
 
-        // $final_uid = $this->ApiControllerCheckUid($request->uid);
-        // $final_ip = $this->ApiControllerCheckIp($request);
 
         $fileSetting = FilesSettings::where('uid', $request->uid)->first();
         if (!$fileSetting) {
-            return response()->json(['message' => 'Terrible Code', 'fileSetting' => $fileSetting], 501);
+            return response()->json(['message' => 'Terrible Upload Handling', 'fileSetting' => $fileSetting], 501);
         }
         $path = $request->file('filesupload')->store('uploads', 'public');
 
@@ -186,7 +186,7 @@ class ApiController extends Controller
         $final_uid = $this->ApiControllerCheckUid($request->uid);
         $final_ip = $this->ApiControllerCheckIp($request);
 
-        $storedsettings = $this->storeFileSettings($request, $final_uid, $final_ip, 2);
+        $storedsettings = $this->storeFileSettings($request, $final_uid, $final_ip, 2); // 2 = Files, 1 = Text
 
         return response()->json(['message' => 'Settings uploaded successfully', 'uid' => $final_uid], 201);
     }
@@ -205,12 +205,15 @@ class ApiController extends Controller
         if (!$fileSetting) {
             return response()->json(['message' => 'UID doesnt exist'], 404);
         }
-        if ($request->requiredPassword !== $fileSetting->password){
+        if ($request->requiredPassword !== $fileSetting->password) {
             return response()->json(['message' => 'Bad Password'], 404);
         }
 
+        //Burn record if file UID with burn after read enabled is called the second time. Files from storage are deleted via Model Events
+        //Also Securefile and FilesSettings table have 'cascade' foreign key constraint
+        // (If Settings is deleted, then the records that reference it are also deleted)
         if ($fileSetting->burn_after_read > 1) {
-            //dd('del');
+            //If burn > 1, trigger delete
             $fileSetting->delete();
             return response()->json(['message' => 'UID doesnt exist, burned'], 404);
         }
@@ -222,19 +225,21 @@ class ApiController extends Controller
             return $this->blockErrorResponse();
         }
 
-        // If Settings burn > 1, update to 2 and also update burn of securefiles
+        // If Settings burn is 1, update to 2 and also update burn of securefiles
         if ($fileSetting->burn_after_read > 0) {
-            $fileSetting->update(['burn_after_read' => $fileSetting->burn_after_read + 1]);
-            $fileSetting->securefile->each(function ($securefile){
+            $fileSetting->update(['burn_after_read' => 2]);
+            $fileSetting->securefile->each(function ($securefile) {
                 $securefile->update(['file_burn_after_read' => 2]);
             });
         }
-        // if ($given_uid) {
-        //     $this->deleteBurnAfterRead($given_uid);
-        // }
+
+
+        //File detail will contain actual filename with extension
+        //thumbnail will contain full path to thumbnail image in backend
+        //file_location will contain full path to actual file in backend
         $data->each(function ($item) {
             // Add custom attributes
-            $item->file_location = asset('storage/' . $item->file_detail); // Replace with actual logic or value
+            $item->file_location = asset('storage/' . $item->file_detail);
         });
         foreach ($data as $d) { //Reusable
             $d['file_detail'] = basename($d['file_detail']);
@@ -252,12 +257,12 @@ class ApiController extends Controller
             return $this->validationErrorResponse($validator);
         }
 
-        
+
         //$data = $this->fetchData(Securefile::class, $given_uid);
         $table = (new Securefile)->getTable();
         $data = Securefile::leftJoin('files_settings', "{$table}.setting_id", '=', 'files_settings.id')
             ->select("{$table}.*", 'files_settings.password', 'files_settings.expiry_date', 'files_settings.burn_after_read', 'files_settings.uid', 'files_settings.ip', 'files_settings.block')
-            ->where('file_uid', '=', $given_uid) //no fetchData() bcz file_uid
+            ->where('file_uid', '=', $given_uid) //no $this->fetchData() bcz file_uid
             ->get();
         if (!$data->count()) {
             return response()->json(['message' => 'FileUID doesnt exist'], 404);
@@ -267,7 +272,7 @@ class ApiController extends Controller
         if (!$fileUID) {
             return response()->json(['message' => 'Terrible Code'], 501);
         }
-        if ($request->requiredPassword !== $fileUID->files_settings->password){
+        if ($request->requiredPassword !== $fileUID->files_settings->password) {
             return response()->json(['message' => 'Bad Password'], 404);
         }
         if ($fileUID->file_burn_after_read > 1) {
@@ -279,15 +284,15 @@ class ApiController extends Controller
             return $this->blockErrorResponse();
         }
         if ($fileUID->file_burn_after_read > 0) {
-            //dd($data);
             $fileUID->update(['file_burn_after_read' => $fileUID->file_burn_after_read + 1]);
         }
-        // if ($given_uid) {
-        //     $this->deleteBurnAfterRead($given_uid);
-        // }
+
+        //File detail will contain actual filename with extension
+        //thumbnail will contain full path to thumbnail image in backend
+        //file_location will contain full path to actual file in backend
         $data->each(function ($item) {
             // Add custom attributes
-            $item->file_location = asset('storage/' . $item->file_detail); // Replace with actual logic or value
+            $item->file_location = asset('storage/' . $item->file_detail);
         });
         foreach ($data as $d) { //Reusable
             $d['file_detail'] = basename($d['file_detail']);
@@ -299,22 +304,13 @@ class ApiController extends Controller
     public function apiPreviewFiles(Request $request, $given_uid = null)
     {
         $data = $this->fetchData(Securefile::class, $given_uid);
-        //dd($data); //$d['thumbnail']
-        $fileids = [];
-        $imageUrls = [];
-        // if ($data && $this->checkBlock($data)) {
-        //     return $this->blockErrorResponse();
-        // }
-        // if ($given_uid) {
-        //     $this->deleteBurnAfterRead($given_uid);
-        // }
+
         foreach ($data as $d) { //Reusable
             //$fileids[] = $d['id'];
             //$imageUrls[] = asset('storage/' . $d['thumbnail']);
             $d['file_detail'] = basename($d['file_detail']);
             $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
         }
-        //return response()->json(['fileids' => $fileids, 'images' => $imageUrls], 200);
         return response()->json(['data' => $data], 200);
     }
 
@@ -371,20 +367,21 @@ class ApiController extends Controller
     public function apiDeleteMultipleFiles(Request $request, $given_uid = null)
     {
         // $data = $this->fetchData(Securefile::class, $given_uid);
-        $data = FilesSettings::where('uid', $given_uid)->first();
+        $data = FilesSettings::where('uid', $given_uid)->where('type','=',2)->first();
         if (!$data) {
             return response()->json(['message' => 'UID not found'], 400);
         }
         if ($data['block']) {
             return $this->blockErrorResponse();
         }
-        $this->deleteFilesAndSettings($given_uid);
+        $data->delete();
+        //$this->deleteFilesAndSettings($given_uid);
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
     public function apiDeleteOnefile(Request $request, $given_uid = null)
     {
-        $data = $this->fetchData(Securefile::class, $given_uid);
+        //$data = $this->fetchData(Securefile::class, $given_uid);
         $data = Securefile::where('file_uid', $given_uid)->first();
         if (!$data) {
             return response()->json(['message' => 'UID not found'], 400);
@@ -392,7 +389,8 @@ class ApiController extends Controller
         if ($data['block']) {
             return $this->blockErrorResponse();
         }
-        $this->deleteFilesAndSettings($given_uid);
+        //$this->deleteFilesAndSettings($given_uid);
+        $data->delete();
         return response()->json(['message' => 'Files deleted'], 200);
     }
 
@@ -405,16 +403,22 @@ class ApiController extends Controller
 
     // Protected Functions for Reusability
     protected function ApiControllerCheckUid($uid)
+    //This creates 8 char random string, if uid is not passed in request
     {
         return $uid ?: str()->random(8);
     }
 
     protected function ApiControllerCheckIp(Request $request)
+    //This returns string "127.0.0.1" if ip is not given in request
+    //ip stores the domain of mirror that is selected in frontend
+    //Therefore ip is required when submitting data to backend.
+    //This function was made when ip was considered optional.
     {
         return $request->ip ?: $request->ip();
     }
 
     protected function checkBlock($data)
+    //Check if UID is blocked by admin in backend
     {
         return $data->count() && $data[0]->block;
     }
@@ -434,7 +438,6 @@ class ApiController extends Controller
 
         // Generate a thumbnail at the 1-second mark
         $thumbnailPath = 'uploads/thumbnails/' . pathinfo($filePath, PATHINFO_FILENAME) . '.jpg';
-        //dd(storage_path('app/public/'.$thumbnailPath));
         $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(1))->save(storage_path('app/public/' . $thumbnailPath));
 
         return $thumbnailPath;
@@ -455,32 +458,27 @@ class ApiController extends Controller
     }
 
     protected function storeFileSettings($request, $uid, $ip, $type)
-    {
+    {   
+        //Request must contain expirydate and burn after read.
+        //  Remember type value: 1 = Text, 2 = File(s)
+
+        //Check if uid already exists
         $fileSetting = FilesSettings::where('uid', $uid)->first();
         if ($fileSetting) {
             return $fileSetting;
         }
-        if ($request->password) {
-            return FilesSettings::create([
-                'expiry_date' => strtotime($request->expiry_date),
-                'burn_after_read' => $request->burn_after_read,
-                'password' => $request->password,
-                'uid' => $uid,
-                'ip' => $ip,
-                'type' => $type,
-            ]);
-        } else {
-            return FilesSettings::create([
-                'expiry_date' => strtotime($request->expiry_date),
-                'burn_after_read' => $request->burn_after_read,
-                'uid' => $uid,
-                'ip' => $ip,
-                'type' => $type,
-            ]);
-        }
+        return FilesSettings::create([
+            'expiry_date' => strtotime($request->expiry_date),
+            'burn_after_read' => $request->burn_after_read,
+            'password' => $request->password,
+            'uid' => $uid,
+            'ip' => $ip,
+            'type' => $type,
+        ]);
     }
 
     protected function fetchData($model, $uid)
+    //This gives Securefile or Securetext data joined with file_settings
     {
         $table = (new $model)->getTable(); // Get the table name dynamically
 
