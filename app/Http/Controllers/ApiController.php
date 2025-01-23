@@ -20,10 +20,11 @@ class ApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'textupload' => 'required|string',
-            'expiry_date' => 'required|after:today',
+            'expiry_date' => 'required|regex:/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)$/|after:today',
             'burn_after_read' => 'required|boolean',
-            'uid' => 'unique:files_settings',
-            'ip' => 'string',
+            'password' => 'nullable|string',
+            //'uid' => 'unique:files_settings',
+            'ip' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -40,14 +41,27 @@ class ApiController extends Controller
             'setting_id' => $storedsettings->id,
         ]);
 
-        return response()->json(['message' => 'Text uploaded successfully'], 201);
+        return response()->json(['message' => 'Text uploaded successfully', 'uid' => $final_uid], 201);
     }
 
     // Show Texts
-    public function apiShowTexts(Request $request, $given_uid = null)
+    public function apiShowTexts(Request $request, $given_uid)
     {
+        $validator = Validator::make($request->all(), [
+            'requiredPassword' => 'nullable|string', //nullable is needed for empty field
+        ]);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->where('type','=',1)->first();
+        if (!$fileSetting) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
+        }
+        if ($request->requiredPassword !== $fileSetting->password){
+            return response()->json(['message' => 'Bad Password'], 404);
+        }
+        
         $data = $this->fetchData(Securetext::class, $given_uid);
-
         if ($data && $this->checkBlock($data)) {
             return $this->blockErrorResponse();
         }
@@ -58,6 +72,7 @@ class ApiController extends Controller
 
         return response()->json(['data' => $data], 200);
     }
+    
 
     // Delete Texts
     public function apiDeleteTexts(Request $request, $given_uid = null)
@@ -177,7 +192,7 @@ class ApiController extends Controller
     }
 
     // Show Files
-    public function apiShowFiles(Request $request, $given_uid = null)
+    public function apiShowMultipleFiles(Request $request, $given_uid = null)
     {
         $validator = Validator::make($request->all(), [
             'requiredPassword' => 'nullable|string', //nullable is needed for empty field
