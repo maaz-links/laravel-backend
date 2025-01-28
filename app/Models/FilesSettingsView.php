@@ -47,7 +47,7 @@ class FilesSettingsView extends Model
     }
     protected function getContent($id){
         if($this->type == 2){
-            $content = Securefile::select('securefile.id','securefile.file_detail')->where('setting_id','=',$id)->get()->toArray();
+            $content = Securefile::select('securefile.id','securefile.file_detail','securefile.thumbnail','securefile.file_uid')->where('setting_id','=',$id)->get()->toArray();
         }
         else if($this->type == 1){
             $content = Securetext::select('securetext.id','securetext.content')->where('setting_id','=',$id)->get()->toArray();

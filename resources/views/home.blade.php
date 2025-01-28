@@ -36,7 +36,7 @@
         </tr>
         </thead>
         <tbody>
-        @foreach($settings as $sett )
+        @foreach($settings as $sett)
             <tr>
                 <td>{{$sett->ip}}</td>
                 <td>{{$sett->uid}}</td>
@@ -59,6 +59,7 @@
                         --}}
                         <button 
                         class="btn btn-primary btn-sm detailview" 
+                        my-data="{{$sett->id}}"
                         data-bs-toggle="modal" 
                         data-bs-target="#detailModal" 
                         data-content="{{ json_encode($sett->content) }}" 
@@ -98,6 +99,7 @@
         @endforeach
         </tbody>
     </table>
+    {{-- <p>{{phpinfo()}}</p> --}}
 @stop
 
 @section('css')
@@ -146,86 +148,86 @@
 });
     </script>
     <script>
-        // detailview = document.getElementsByClassName('detailview');
-        // Array.from(detailview).forEach((element) => {
-        //   element.addEventListener("click", (e) => {
-        //     console.log("detailview ");
-        //     tr = e.target.parentNode.parentNode;
-        //     value7 = tr.getElementsByTagName("td")[1].textContent;
-        //     //descriptionView.value = value7;
-        //     console.log(value7);
-        //     console.log(e.target.id);
-        //     //$('#detailModal').modal('toggle');
-        //   })
-        // })
-        document.addEventListener("DOMContentLoaded", () => {
-    const detailButtons = document.querySelectorAll(".detailview");
-    const modalContent = document.getElementById("modalContent");
+        const modalContent = document.getElementById("modalContent");
+            document.querySelector("#myTable").addEventListener("click", function (event) {
+                // Check if the clicked element is a detail view button
+                if (event.target && event.target.classList.contains("detailview")) {
+                    console.log("Detail view button clicked!");
+                    const button = event.target;
 
-    detailButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            const content = JSON.parse(button.getAttribute("data-content"));
-            const type = button.getAttribute("data-type");
-            console.log(content);
-            console.log(type);
-            // Clear previous content
-            modalContent.innerHTML = "";
+                    //document.addEventListener("DOMContentLoaded", () => {
+                    //const detailButtons = document.querySelectorAll(".detailview");
 
-            if (type == 1) {
-                modalContent.innerHTML += `<p>Text:</p>`;
-                // Display text content
-                content.forEach((item) => {
-                    modalContent.innerHTML += `<p> ${item.content}</p>`;
-                });
-            } else if (type == 2)
-            // {
-            //     // Display file links
-            //     content.forEach((item) => {
-            //         modalContent.innerHTML += `
-            //             <p>File: <a href="${item.file_detail}" target="_blank">${item.file_detail}</a></p>
-            //         `;
-            //     });
-            // }
 
-            if (type == 2) {
-                modalContent.innerHTML += `<p>File(s):</p>`;
-                // For files, display icons based on type
-                content.forEach((file) => {
-                    const fileUrl = file.file_detail; // File URL
-                    const fileId = file.id;
-                    const fileName = fileUrl.split("/").pop(); // Extract file name
-                    const fileExtension = fileName.split(".").pop().toLowerCase(); // Extract file extension
+                    //detailButtons.forEach((button) => {
+                    //button.addEventListener("click", () => {
+                    const content = JSON.parse(button.getAttribute("data-content"));
+                    const type = button.getAttribute("data-type");
+                    const id = button.getAttribute("my-data");
+                    // Clear previous content
+                    modalContent.innerHTML = "";
 
-                    // Check if it's an image file
-                    const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension);
-                    if (isImage) {
-                        // Display image thumbnail
-                        modalContent.innerHTML += `
+                    if (type == 1) {
+                        modalContent.innerHTML += `<p>Text:</p><hr>`;
+                        // Display text content
+                        content.forEach((item) => {
+                            modalContent.innerHTML += `<p> ${item.content}</p>`;
+                        });
+                    } else if (type == 2)
+                        // {
+                        //     // Display file links
+                        //     content.forEach((item) => {
+                        //         modalContent.innerHTML += `
+                        //             <p>File: <a href="${item.file_detail}" target="_blank">${item.file_detail}</a></p>
+                        //         `;
+                        //     });
+                        // }
+
+                        if (type == 2) {
+                            modalContent.innerHTML += `<p>File(s):</p>`;
+                            // For files, display icons based on type
+                            content.forEach((file) => {
+                                const fileUrl = file.file_detail; // File URL
+                                const fileThumbnail = file.thumbnail
+                                const fileId = file.id;
+                                const fileName = fileUrl.split("/").pop(); // Extract file name
+                                const fileExtension = fileName.split(".").pop().toLowerCase(); // Extract file extension
+                                const fileUID = file.file_uid
+
+                                // Check if it's an image file
+                                //const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension);
+                                const isMedia = ["jpg", "jpeg", "png", "gif", "webp", "mp4", "mkv", "avi", "mov", "webm"].includes(fileExtension);
+                                if (isMedia) {
+                                    // Display image thumbnail
+                                    modalContent.innerHTML += `
                             <div class="d-inline-block text-center m-2">
                                 
                                 <a href="/download/${fileId}" target="_blank">
-                                    <img src="/storage/${fileUrl}" alt="${fileName}" class="img-thumbnail" style="width: 80px; height: 80px;">
+                                    <img src="/storage/${fileThumbnail}" alt="${fileUID}" class="img-thumbnail" style="width: 80px; height: 80px;">
                                 </a>
-                                <p class="small text-truncate">${fileName}</p>
+                                <p class="small">UID:<br> ${fileUID}</p>
                             </div>
                         `;
-                    } else {
-                        // Display generic file icon
-                        modalContent.innerHTML += `
+                                } else {
+                                    // Display generic file icon
+                                    // <p class="small text-truncate">UID: ${fileUID}</p>
+                                    modalContent.innerHTML += `
                             <div class="d-inline-block text-center m-2">
                                 <a href="/download/${fileId}" target="_blank">
                                     <div class="icon-square bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 24px; border-radius: 8px;">
                                         <i class="bi bi-file-earmark"></i>
                                     </div>
                                 </a>
-                                <p class="small text-truncate">${fileName}</p>
+                                <p class="small">UID:<br> ${fileUID}</p>
                             </div>
                         `;
-                    }
-                });
-            }
-        });
-    });
+                                }
+                            });
+                        }
+        //});
+    //});
+//});
+}
 });
     </script>
 @stop

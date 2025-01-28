@@ -100,7 +100,7 @@ class ApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'filesupload' => 'required|array|min:1',
-            'filesupload.*' => 'required|file|max:5120',
+            'filesupload.*' => 'required|file',
             'expiry_date' => 'required|after:today',
             'burn_after_read' => 'required|boolean',
             'uid' => 'unique:files_settings',
@@ -129,7 +129,7 @@ class ApiController extends Controller
     public function apiFileUploadSingle(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'filesupload' => 'required|file|max:5120',
+            'filesupload' => 'required|file',
             //'file_burn_after_read' => 'required|boolean',
             'uid' => 'required|string',
         ]);
