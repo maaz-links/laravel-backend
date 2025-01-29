@@ -202,8 +202,8 @@
                                     modalContent.innerHTML += `
                             <div class="d-inline-block text-center m-2">
                                 
-                                <a href="/download/${fileId}" target="_blank">
-                                    <img src="/storage/${fileThumbnail}" alt="${fileUID}" class="img-thumbnail" style="width: 80px; height: 80px;">
+                                <a href="download/${fileId}" target="_blank">
+                                    <img src="storage/${fileThumbnail}" alt="${fileUID}" class="img-thumbnail" style="width: 80px; height: 80px;">
                                 </a>
                                 <p class="small">UID:<br> ${fileUID}</p>
                             </div>

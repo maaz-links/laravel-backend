@@ -301,6 +301,28 @@ class ApiController extends Controller
         return response()->json(['data' => $data], 200);
     }
 
+    public function apiIsPassRequiredSetting(Request $request,$given_uid){
+        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->first();
+        if (!$fileSetting) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
+        }
+        if ($fileSetting->password){
+            return response()->json(['message' => 'true'], 200);
+        }
+        return response()->json(['message' => 'false'], 200);
+    }
+
+    public function apiIsPassRequiredSingleFile(Request $request,$given_uid){
+        $fileUID = Securefile::where('file_uid', '=', $given_uid)->first();
+        if (!$fileUID) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
+        }
+        if ($fileUID->files_settings->password){
+            return response()->json(['message' => 'true'], 200);
+        }
+        return response()->json(['message' => 'false'], 200);
+    }
+
     public function apiPreviewFiles(Request $request, $given_uid = null)
     {
         $data = $this->fetchData(Securefile::class, $given_uid);

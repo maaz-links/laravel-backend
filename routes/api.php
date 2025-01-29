@@ -13,6 +13,8 @@ Route::put('/upload/titles',[ApiController::class, 'apiUpdateTitles']);
 
 Route::post('/download',[ApiController::class, 'apiDownloadFile']);
 
+Route::get('/upload/checkpassrequirement/{given_uid}',[ApiController::class,'apiIsPassRequiredSetting']);
+Route::get('/upload/checkpassrequirementone/{given_uid}',[ApiController::class,'apiIsPassRequiredSingleFile']);
 Route::post('/upload/attachsingle/{given_uid}',[ApiController::class, 'apiShowOneFile']);
 Route::post('/upload/attachments/{given_uid}',[ApiController::class, 'apiShowMultipleFiles']);
 Route::delete('/upload/attachsingle/delete/{given_uid}',[ApiController::class, 'apiDeleteOneFile']);
