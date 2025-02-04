@@ -145,12 +145,23 @@ class ApiController extends Controller
         }
         $path = $request->file('filesupload')->store('uploads', 'public');
 
+        //getFileName
+        $fileNameWithExtension = $request->file('filesupload')->getClientOriginalName(); // e.g., example.txt
+        $fileNameWithoutExtension = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
+
         //Generating THumbnail
         $mimeType = $request->file('filesupload')->getMimeType();
         // Check if it's a video or image
 
+        $thumbnailerror = false;
         if (strpos($mimeType, 'video/') === 0) {
-            $thumbnailPath = $this->generateThumbnail($path);
+            try{
+                $thumbnailPath = $this->generateThumbnail($path);
+            } catch (\Throwable $e) {
+                $thumbnailPath = null;
+                $thumbnailerror = true;                
+            }
+            
         } elseif (strpos($mimeType, 'image/') === 0) {
             $thumbnailPath = $path;
         } else {
@@ -160,15 +171,96 @@ class ApiController extends Controller
 
         Securefile::create([
             'file_burn_after_read' => $fileSetting->burn_after_read,
+            'title' => $fileNameWithoutExtension,
             'file_uid' => str()->random(8),
             'file_detail' => $path,
             'setting_id' => $fileSetting->id,
             'thumbnail' => $thumbnailPath
         ]);
 
-        return response()->json(['message' => 'One File uploaded successfully', 'uid' => $fileSetting->id], 201);
+        if($thumbnailerror){
+            return response()->json(['message' => 'Thumbnail didnt generate', 'setting_uid' => $fileSetting->uid], 206);
+        }
+        return response()->json(['message' => 'One File uploaded successfully', 'setting_uid' => $fileSetting->uid], 201);
 
     }
+
+    public function apiUpdateOneFile(Request $request, $given_uid = null)
+    {
+        $olddata = Securefile::where('file_uid', $given_uid)->first();
+        if (!$olddata) {
+            return response()->json(['message' => 'UID not found'], 400);
+        }
+        $oldFile = $olddata->file_detail;
+        $oldThumbnail = $olddata->thumbnail;
+        
+        $validator = Validator::make($request->all(), [
+            'filesupload' => 'required|file',
+            //'file_burn_after_read' => 'required|boolean',
+            'uid' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+
+        $fileSetting = FilesSettings::where('uid', $request->uid)->first();
+        if (!$fileSetting) {
+            return response()->json(['message' => 'Terrible Upload Handling', 'fileSetting' => $fileSetting], 501);
+        }
+        $path = $request->file('filesupload')->store('uploads', 'public');
+
+        //getFileName
+        $fileNameWithExtension = $request->file('filesupload')->getClientOriginalName(); // e.g., example.txt
+        $fileNameWithoutExtension = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
+
+        //Generating THumbnail
+        $mimeType = $request->file('filesupload')->getMimeType();
+        // Check if it's a video or image
+
+        $thumbnailerror = false;
+        if (strpos($mimeType, 'video/') === 0) {
+            try{
+                $thumbnailPath = $this->generateThumbnail($path);
+            } catch (\Throwable $e) {
+                $thumbnailPath = null;
+                $thumbnailerror = true;                
+            }
+            
+        } elseif (strpos($mimeType, 'image/') === 0) {
+            $thumbnailPath = $path;
+        } else {
+            // For other file types
+            $thumbnailPath = null;
+        }
+        $olddata->update([
+            //'file_burn_after_read' => $fileSetting->burn_after_read,
+            'title' => $fileNameWithoutExtension,
+            //'file_uid' => str()->random(8),
+            'file_detail' => $path,
+            //'setting_id' => $fileSetting->id,
+            'thumbnail' => $thumbnailPath
+        ]);
+
+        //Delete old data after updating
+        if ($oldFile) {
+            if (Storage::disk('public')->exists($oldFile)) {
+                Storage::disk('public')->delete($oldFile);
+            }
+        }
+        if ($oldThumbnail) {
+            if (Storage::disk('public')->exists($oldThumbnail)) {
+                Storage::disk('public')->delete($oldThumbnail);
+            }
+        }
+
+        if($thumbnailerror){
+            return response()->json(['message' => 'Thumbnail didnt generate', 'setting_uid' => $fileSetting->uid], 206);
+        }
+        return response()->json(['message' => 'One File uploaded successfully', 'setting_uid' => $fileSetting->uid], 201);
+
+    }
+
     public function apiCreateSetting(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -238,13 +330,18 @@ class ApiController extends Controller
         //thumbnail will contain full path to thumbnail image in backend
         //file_location will contain full path to actual file in backend
         $data->each(function ($item) {
-            // Add custom attributes
-            $item->file_location = asset('storage/' . $item->file_detail);
+
+            $filePath = $item->file_detail;
+            //Modify existing attrib
+            $item->file_detail = basename($item->file_detail);
+            $item->thumbnail = asset('storage/' . $item->thumbnail);
+
+            //Add new attrib
+            $item->file_location = asset(path: 'storage/' . $filePath);
+            $item->mime = Storage::disk('public')->mimeType($filePath);
+            $item->size = Storage::disk('public')->size($filePath);
+            $item->extension = pathinfo(Storage::disk('public')->path($filePath), PATHINFO_EXTENSION);
         });
-        foreach ($data as $d) { //Reusable
-            $d['file_detail'] = basename($d['file_detail']);
-            $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
-        }
         return response()->json(['data' => $data], 200);
     }
 
@@ -291,13 +388,18 @@ class ApiController extends Controller
         //thumbnail will contain full path to thumbnail image in backend
         //file_location will contain full path to actual file in backend
         $data->each(function ($item) {
-            // Add custom attributes
-            $item->file_location = asset('storage/' . $item->file_detail);
+
+            $filePath = $item->file_detail;
+            //Modify existing attrib
+            $item->file_detail = basename($item->file_detail);
+            $item->thumbnail = asset('storage/' . $item->thumbnail);
+
+            //Add new attrib
+            $item->file_location = asset(path: 'storage/' . $filePath);
+            $item->mime = Storage::disk('public')->mimeType($filePath);
+            $item->size = Storage::disk('public')->size($filePath);
+            $item->extension = pathinfo(Storage::disk('public')->path($filePath), PATHINFO_EXTENSION);
         });
-        foreach ($data as $d) { //Reusable
-            $d['file_detail'] = basename($d['file_detail']);
-            $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
-        }
         return response()->json(['data' => $data], 200);
     }
 
@@ -306,10 +408,15 @@ class ApiController extends Controller
         if (!$fileSetting) {
             return response()->json(['message' => 'UID doesnt exist'], 404);
         }
-        if ($fileSetting->password){
-            return response()->json(['message' => 'true'], 200);
-        }
-        return response()->json(['message' => 'false'], 200);
+        $isBurned = $this->CheckBurn($fileSetting,0);
+        if ($isBurned) {return $isBurned;}
+
+        return response()->json([
+            'message' => $fileSetting->password ? 'true' : 'false',
+            'settinguid' => $fileSetting->uid,
+            'expiry' => $fileSetting->expiry_date,
+            'burn_after_read' => $fileSetting->burn_after_read,
+        ], 200);
     }
 
     public function apiIsPassRequiredSingleFile(Request $request,$given_uid){
@@ -317,22 +424,55 @@ class ApiController extends Controller
         if (!$fileUID) {
             return response()->json(['message' => 'UID doesnt exist'], 404);
         }
-        if ($fileUID->files_settings->password){
-            return response()->json(['message' => 'true'], 200);
+        
+        $isBurned = $this->CheckBurn($fileUID,1);
+        if ($isBurned) {return $isBurned;}
+
+        return response()->json([
+            'message' => $fileUID->files_settings->password ? 'true' : 'false',
+            'settinguid' => $fileUID->files_settings->uid,
+            'expiry' => $fileUID->files_settings->expiry_date,
+            'burn_after_read' => $fileUID->file_burn_after_read,
+        ], 200);
+        
+    }
+
+    public function apiVerifyPassword(Request $request, $given_uid){
+        $validator = Validator::make($request->all(), [
+            'requiredPassword' => 'nullable|string', //nullable is needed for empty field
+        ]);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
         }
-        return response()->json(['message' => 'false'], 200);
+        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->first();
+        if (!$fileSetting) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
+        }
+        if ($request->requiredPassword !== $fileSetting->password) {
+            return response()->json(['message' => 'Bad Password'], 404);
+        }else{
+            return response()->json(['message' => 'OK'], 200);
+        }
     }
 
     public function apiPreviewFiles(Request $request, $given_uid = null)
     {
         $data = $this->fetchData(Securefile::class, $given_uid);
 
-        foreach ($data as $d) { //Reusable
-            //$fileids[] = $d['id'];
-            //$imageUrls[] = asset('storage/' . $d['thumbnail']);
-            $d['file_detail'] = basename($d['file_detail']);
-            $d['thumbnail'] = asset('storage/' . $d['thumbnail']);
-        }
+        $data->each(function ($item) {
+
+            $filePath = $item->file_detail;
+            //Modify existing attrib
+            $item->file_detail = basename($item->file_detail);
+            $item->thumbnail = asset('storage/' . $item->thumbnail);
+
+            //Add new attrib
+            $item->file_location = asset(path: 'storage/' . $filePath);
+            $item->mime = Storage::disk('public')->mimeType($filePath);
+            $item->size = Storage::disk('public')->size($filePath);
+            $item->extension = pathinfo(Storage::disk('public')->path($filePath), PATHINFO_EXTENSION);
+        });
+
         return response()->json(['data' => $data], 200);
     }
 
@@ -423,6 +563,21 @@ class ApiController extends Controller
         return response()->json(['mirror' => $securemirrors, 'expire' => $expirationduration], 200);
     }
 
+    protected function CheckBurn($myUID,$oneFile){
+        if($oneFile){
+            if ($myUID->file_burn_after_read > 1) {
+                $myUID->delete();
+                return response()->json(['message' => 'FileUID doesnt exist, burned'], 404);
+            }
+        }else{
+            if ($myUID->burn_after_read > 1) {
+                $myUID->delete();
+                return response()->json(['message' => 'SettingUID doesnt exist, burned'], 404);
+            }
+        }
+        return false;
+    }
+
     // Protected Functions for Reusability
     protected function ApiControllerCheckUid($uid)
     //This creates 8 char random string, if uid is not passed in request
@@ -456,6 +611,10 @@ class ApiController extends Controller
         }
 
         $ffmpeg = FFMpeg::create();
+        // $ffmpeg = FFMpeg::create([
+        //     'ffmpeg.binaries'  => '/var/www/vhosts/filepad.forum-solution.com/httpdocs/ffmpeg',
+        //     'ffprobe.binaries' => '/var/www/vhosts/filepad.forum-solution.com/httpdocs/ffprobe',
+        // ]);
         $video = $ffmpeg->open(storage_path('app/public/' . $filePath));
 
         // Generate a thumbnail at the 1-second mark
