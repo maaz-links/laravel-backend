@@ -313,10 +313,6 @@ class ApiController extends Controller
 
         $data = $this->fetchData(Securefile::class, $given_uid);
 
-        if ($data && $this->checkBlock($data)) {
-            return $this->blockErrorResponse();
-        }
-
         // If Settings burn is 1, update to 2 and also update burn of securefiles
         if ($fileSetting->burn_after_read > 0) {
             $fileSetting->update(['burn_after_read' => 2]);
@@ -377,9 +373,6 @@ class ApiController extends Controller
             return response()->json(['message' => 'FileUID doesnt exist, burned'], 404);
         }
 
-        if ($data && $this->checkBlock($data)) {
-            return $this->blockErrorResponse();
-        }
         if ($fileUID->file_burn_after_read > 0) {
             $fileUID->update(['file_burn_after_read' => $fileUID->file_burn_after_read + 1]);
         }
@@ -410,6 +403,7 @@ class ApiController extends Controller
         }
         $isBurned = $this->CheckBurn($fileSetting,0);
         if ($isBurned) {return $isBurned;}
+        if ($fileSetting->block) {return $this->blockErrorResponse();}
 
         return response()->json([
             'message' => $fileSetting->password ? 'true' : 'false',
@@ -427,6 +421,7 @@ class ApiController extends Controller
         
         $isBurned = $this->CheckBurn($fileUID,1);
         if ($isBurned) {return $isBurned;}
+        if ($fileUID->files_settings->block) {return $this->blockErrorResponse();}
 
         return response()->json([
             'message' => $fileUID->files_settings->password ? 'true' : 'false',
@@ -563,17 +558,38 @@ class ApiController extends Controller
         return response()->json(['mirror' => $securemirrors, 'expire' => $expirationduration], 200);
     }
 
-    protected function CheckBurn($myUID,$oneFile){
+    protected function CheckBurn($myUID,$oneFile = 0){
         if($oneFile){
-            if ($myUID->file_burn_after_read > 1) {
+            if ($myUID->file_burn_after_read > 1) { //If one file is set to burn and already read.
                 $myUID->delete();
-                return response()->json(['message' => 'FileUID doesnt exist, burned'], 404);
+                return response()->json(['message' => 'FileUID burned'], 406);
+            }
+            if ($myUID->files_settings->expiry_date < time()) { //if expiry date exceeds current time
+                //$myUID->delete();
+                $myUID->files_settings->delete();
+                return response()->json(['message' => 'FileUID and Settings expired'], 406);
             }
         }else{
-            if ($myUID->burn_after_read > 1) {
+            if ($myUID->burn_after_read > 1) { //If setting is set to burn and already read
                 $myUID->delete();
-                return response()->json(['message' => 'SettingUID doesnt exist, burned'], 404);
+                return response()->json(['message' => 'SettingUID burned'], 406);
             }
+            if ($myUID->expiry_date < time()) {//If expiry date exceeds current time
+                $myUID->delete();
+                return response()->json(['message' => 'SettingUID expired'], 406);
+            }
+            //dd($myUID->securefile()->count() ,$myUID->securetext()->count());
+            if(!$myUID->securefile()->count() && !$myUID->securetext()->count()){ //If settings is empty
+                $myUID->delete();
+                //dd('damnit');
+                return response()->json(['message' => 'SettingUID was empty'], 406);
+            }
+            //dd('nigg');
+            $myUID->securefile->each(function ($securefile) {
+                if($securefile->file_burn_after_read > 1){ //Edge case where setting is not read but files within are already read individually
+                    $securefile->delete();
+                }
+            });
         }
         return false;
     }
@@ -698,4 +714,21 @@ class ApiController extends Controller
 
         FilesSettings::where('uid', '=', $uid)->delete();
     }
+
+    public function apiCleardata(Request $request,$limit = 100){
+        $allSettings = FilesSettings::take($limit)->get();
+        $success = 0;
+        $failed = 0;
+        foreach ($allSettings as $s) {
+            try{
+                $s->delete();
+                $success++;
+            }
+            catch(\Throwable $e){
+                $failed++;
+            }
+        }
+        return response()->json(['success' => $success,'failed' => $failed], 200);
+    }
+    
 }

@@ -28,3 +28,6 @@ Route::post('/upload/textupload',[ApiController::class, 'apiTextUpload']);
 Route::post('/upload/showtexts',[ApiController::class, 'apiShowTexts']);
 Route::post('/upload/showtexts/{given_uid}',[ApiController::class, 'apiShowTexts']);
 Route::delete('/upload/showtexts/delete/{given_uid}',[ApiController::class, 'apiDeleteTexts']);
+
+Route::delete('/upload/cleardata',[ApiController::class, 'apiCleardata']);
+Route::delete('/upload/cleardata/{limit}',[ApiController::class, 'apiCleardata']);
