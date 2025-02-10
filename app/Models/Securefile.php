@@ -22,14 +22,14 @@ class Securefile extends Model
     {
         static::deleting(function ($model) {
             if ($model->file_detail) {
-                if (Storage::disk('public')->exists($model->file_detail)) {
-                    Storage::disk('public')->delete($model->file_detail);
+                if (Storage::disk('local')->exists($model->file_detail)) {
+                    Storage::disk('local')->delete($model->file_detail);
                 }
             }
             //dd('ok');
             if ($model->thumbnail) {
-                if (Storage::disk('public')->exists($model->thumbnail)) {
-                    Storage::disk('public')->delete($model->thumbnail);
+                if (Storage::disk('local')->exists($model->thumbnail)) {
+                    Storage::disk('local')->delete($model->thumbnail);
                 }
             }
         });
@@ -43,7 +43,7 @@ class Securefile extends Model
     // protected function size(): Attribute //productName == product_name
     // {
     //     return new Attribute(
-    //         get: fn () => Storage::disk('public')->size($this->file_detail)
+    //         get: fn () => Storage::disk('local')->size($this->file_detail)
     //     );
     // }
 

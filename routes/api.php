@@ -31,3 +31,24 @@ Route::delete('/upload/showtexts/delete/{given_uid}',[ApiController::class, 'api
 
 Route::delete('/upload/cleardata',[ApiController::class, 'apiCleardata']);
 Route::delete('/upload/cleardata/{limit}',[ApiController::class, 'apiCleardata']);
+
+Route::get('/files/{filename}', function ($filename, Request $request) {
+    $path = storage_path("app/private/uploads/{$filename}");
+    if (!file_exists($path)) {
+        abort(404, "File not found.");
+    }
+    return response()->file($path);
+});
+Route::get('/thumbnails/{filename}', function ($filename, Request $request) {
+    $directory = storage_path("app/private/uploads/thumbnails/");
+    $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
+
+    // Scan the directory for matching files (any extension)
+    $matchingFiles = glob("{$directory}{$filenameWithoutExt}.*");
+    if (empty($matchingFiles)) {
+        abort(404, "File not found.");
+    }
+    // Get the first matching file
+    $path = $matchingFiles[0];
+    return response()->file($path);
+});

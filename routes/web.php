@@ -7,12 +7,13 @@ Route::get('/', function () {
 });
 
 //FOR API ROUTES TESTING
-Route::get('/fileform', [ApiController::class, 'fileform'])->name('fileform');
+Route::get('/fileform', [App\Http\Controllers\ApiController::class, 'fileform'])->name('fileform');
 
 Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::post('/home/{blockid}', [App\Http\Controllers\HomeController::class, 'blockChange'])->name('blocker');
-Route::get('/download/{fileurl}', [App\Http\Controllers\HomeController::class, 'GetURL'])->name('fileurl');
+Route::get('/download/{fileurl}', [App\Http\Controllers\HomeController::class, 'GetURL'])->name('downloadfile');
+Route::get('/thumbnail/{fileurl}', [App\Http\Controllers\HomeController::class, 'GetThumbnail'])->name('thumbnail');
 Route::get('/posts', [App\Http\Controllers\HomeController::class, 'posts'])->name('posts');
 
 Route::get('expirationdurations', [ExpirationDurationController::class, 'index'])->name('expirationdurations.index');

@@ -193,7 +193,8 @@
                                 const fileName = fileUrl.split("/").pop(); // Extract file name
                                 const fileExtension = fileName.split(".").pop().toLowerCase(); // Extract file extension
                                 const fileUID = file.file_uid
-
+                                
+                                //thumbnailSrc = (fileUrl == fileThumbnail) ? `api/files/${fileName}`:`api/thumbnails/${fileName}`;
                                 // Check if it's an image file
                                 //const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension);
                                 const isMedia = ["jpg", "jpeg", "png", "gif", "webp", "mp4", "mkv", "avi", "mov", "webm"].includes(fileExtension);
@@ -203,7 +204,7 @@
                             <div class="d-inline-block text-center m-2">
                                 
                                 <a href="download/${fileId}" target="_blank">
-                                    <img src="storage/${fileThumbnail}" alt="${fileUID}" class="img-thumbnail" style="width: 80px; height: 80px;">
+                                    <img src="thumbnail/${fileId}" alt="${fileUID}" class="img-thumbnail" style="width: 80px; height: 80px;">
                                 </a>
                                 <p class="small">UID:<br> ${fileUID}</p>
                             </div>
@@ -213,7 +214,7 @@
                                     // <p class="small text-truncate">UID: ${fileUID}</p>
                                     modalContent.innerHTML += `
                             <div class="d-inline-block text-center m-2">
-                                <a href="/download/${fileId}" target="_blank">
+                                <a href="download/${fileId}" target="_blank">
                                     <div class="icon-square bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 24px; border-radius: 8px;">
                                         <i class="bi bi-file-earmark"></i>
                                     </div>

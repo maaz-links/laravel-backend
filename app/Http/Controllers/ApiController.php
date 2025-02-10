@@ -116,7 +116,7 @@ class ApiController extends Controller
         $storedsettings = $this->storeFileSettings($request, $final_uid, $final_ip, 2);
 
         foreach ($request->file('filesupload') as $file) {
-            $path = $file->store('uploads', 'public');
+            $path = $file->store('uploads', 'local');
             Securefile::create([
                 'file_detail' => $path,
                 'setting_id' => $storedsettings->id,
@@ -143,7 +143,7 @@ class ApiController extends Controller
         if (!$fileSetting) {
             return response()->json(['message' => 'Terrible Upload Handling', 'fileSetting' => $fileSetting], 501);
         }
-        $path = $request->file('filesupload')->store('uploads', 'public');
+        $path = $request->file('filesupload')->store('uploads', 'local');
 
         //getFileName
         $fileNameWithExtension = $request->file('filesupload')->getClientOriginalName(); // e.g., example.txt
@@ -208,7 +208,7 @@ class ApiController extends Controller
         if (!$fileSetting) {
             return response()->json(['message' => 'Terrible Upload Handling', 'fileSetting' => $fileSetting], 501);
         }
-        $path = $request->file('filesupload')->store('uploads', 'public');
+        $path = $request->file('filesupload')->store('uploads', 'local');
 
         //getFileName
         $fileNameWithExtension = $request->file('filesupload')->getClientOriginalName(); // e.g., example.txt
@@ -244,13 +244,13 @@ class ApiController extends Controller
 
         //Delete old data after updating
         if ($oldFile) {
-            if (Storage::disk('public')->exists($oldFile)) {
-                Storage::disk('public')->delete($oldFile);
+            if (Storage::disk('local')->exists($oldFile)) {
+                Storage::disk('local')->delete($oldFile);
             }
         }
         if ($oldThumbnail) {
-            if (Storage::disk('public')->exists($oldThumbnail)) {
-                Storage::disk('public')->delete($oldThumbnail);
+            if (Storage::disk('local')->exists($oldThumbnail)) {
+                Storage::disk('local')->delete($oldThumbnail);
             }
         }
 
@@ -330,13 +330,17 @@ class ApiController extends Controller
             $filePath = $item->file_detail;
             //Modify existing attrib
             $item->file_detail = basename($item->file_detail);
-            $item->thumbnail = asset('storage/' . $item->thumbnail);
-
-            //Add new attrib
-            $item->file_location = asset(path: 'storage/' . $filePath);
-            $item->mime = Storage::disk('public')->mimeType($filePath);
-            $item->size = Storage::disk('public')->size($filePath);
-            $item->extension = pathinfo(Storage::disk('public')->path($filePath), PATHINFO_EXTENSION);
+            if($item->thumbnail){
+                if($filePath == $item->thumbnail){
+                    $item->thumbnail = url('api/files/'.$item->file_detail);
+                }else{
+                    $item->thumbnail = url('api/thumbnails/'.$item->file_detail);
+                }
+            }
+            $item->file_location = url('api/files/'.$item->file_detail);
+            $item->mime = Storage::disk('local')->mimeType($filePath);
+            $item->size = Storage::disk('local')->size($filePath);
+            $item->extension = pathinfo(Storage::disk('local')->path($filePath), PATHINFO_EXTENSION);
         });
         return response()->json(['data' => $data], 200);
     }
@@ -385,13 +389,18 @@ class ApiController extends Controller
             $filePath = $item->file_detail;
             //Modify existing attrib
             $item->file_detail = basename($item->file_detail);
-            $item->thumbnail = asset('storage/' . $item->thumbnail);
-
+            if($item->thumbnail){
+                if($filePath == $item->thumbnail){
+                    $item->thumbnail = url('api/files/'.$item->file_detail);
+                }else{
+                    $item->thumbnail = url('api/thumbnails/'.$item->file_detail);
+                }
+            }
             //Add new attrib
-            $item->file_location = asset(path: 'storage/' . $filePath);
-            $item->mime = Storage::disk('public')->mimeType($filePath);
-            $item->size = Storage::disk('public')->size($filePath);
-            $item->extension = pathinfo(Storage::disk('public')->path($filePath), PATHINFO_EXTENSION);
+            $item->file_location = url('api/files/'.$item->file_detail);
+            $item->mime = Storage::disk('local')->mimeType($filePath);
+            $item->size = Storage::disk('local')->size($filePath);
+            $item->extension = pathinfo(Storage::disk('local')->path($filePath), PATHINFO_EXTENSION);
         });
         return response()->json(['data' => $data], 200);
     }
@@ -459,13 +468,19 @@ class ApiController extends Controller
             $filePath = $item->file_detail;
             //Modify existing attrib
             $item->file_detail = basename($item->file_detail);
-            $item->thumbnail = asset('storage/' . $item->thumbnail);
+            if($item->thumbnail){
+                if($filePath == $item->thumbnail){
+                    $item->thumbnail = url('api/files/'.$item->file_detail);
+                }else{
+                    $item->thumbnail = url('api/thumbnails/'.$item->file_detail);
+                }
+            }
 
             //Add new attrib
-            $item->file_location = asset(path: 'storage/' . $filePath);
-            $item->mime = Storage::disk('public')->mimeType($filePath);
-            $item->size = Storage::disk('public')->size($filePath);
-            $item->extension = pathinfo(Storage::disk('public')->path($filePath), PATHINFO_EXTENSION);
+            $item->file_location = url('api/files/'.$item->file_detail);
+            $item->mime = Storage::disk('local')->mimeType($filePath);
+            $item->size = Storage::disk('local')->size($filePath);
+            $item->extension = pathinfo(Storage::disk('local')->path($filePath), PATHINFO_EXTENSION);
         });
 
         return response()->json(['data' => $data], 200);
@@ -514,7 +529,7 @@ class ApiController extends Controller
         $filer = Securefile::findOrFail($request->fileid);
         //dd(storage_path('app/public/' . $filer['file_detail']));
         if ($filer) {
-            return response()->download(storage_path('app/public/' . $filer['file_detail']));
+            return response()->download(storage_path('app/private/' . $filer['file_detail']));
         } else {
             return response()->json(['message' => 'bruh'], 501);
         }
@@ -618,7 +633,7 @@ class ApiController extends Controller
 
     protected function generateThumbnail($filePath)
     {
-        $dir = storage_path('app/public/uploads/thumbnails');
+        $dir = storage_path('app/private/uploads/thumbnails');
 
         // Check if the directory exists
         if (!File::exists($dir)) {
@@ -631,11 +646,11 @@ class ApiController extends Controller
         //     'ffmpeg.binaries'  => '/var/www/vhosts/filepad.forum-solution.com/httpdocs/ffmpeg',
         //     'ffprobe.binaries' => '/var/www/vhosts/filepad.forum-solution.com/httpdocs/ffprobe',
         // ]);
-        $video = $ffmpeg->open(storage_path('app/public/' . $filePath));
+        $video = $ffmpeg->open(storage_path('app/private/' . $filePath));
 
         // Generate a thumbnail at the 1-second mark
         $thumbnailPath = 'uploads/thumbnails/' . pathinfo($filePath, PATHINFO_FILENAME) . '.jpg';
-        $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(1))->save(storage_path('app/public/' . $thumbnailPath));
+        $video->frame(\FFMpeg\Coordinate\TimeCode::fromSeconds(1))->save(storage_path('app/private/' . $thumbnailPath));
 
         return $thumbnailPath;
     }
@@ -704,11 +719,11 @@ class ApiController extends Controller
         $toBedeleted = FilesSettings::rightJoin("{$tablename}", "{$tablename}.setting_id", '=', 'files_settings.id')->where('uid', $uid)->get();
         //dd($toBedeleted);
         foreach ($toBedeleted as $d) {
-            if (isset($d['file_detail']) && Storage::disk('public')->exists($d['file_detail'])) {
-                Storage::disk('public')->delete($d['file_detail']);
+            if (isset($d['file_detail']) && Storage::disk('local')->exists($d['file_detail'])) {
+                Storage::disk('local')->delete($d['file_detail']);
             }
-            if (isset($d['thumbnail']) && Storage::disk('public')->exists($d['thumbnail'])) {
-                Storage::disk('public')->delete($d['thumbnail']);
+            if (isset($d['thumbnail']) && Storage::disk('local')->exists($d['thumbnail'])) {
+                Storage::disk('local')->delete($d['thumbnail']);
             }
         }
 
