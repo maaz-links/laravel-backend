@@ -143,8 +143,14 @@ class ApiController extends Controller
         if (!$fileSetting) {
             return response()->json(['message' => 'Terrible Upload Handling', 'fileSetting' => $fileSetting], 501);
         }
-        $path = $request->file('filesupload')->store('uploads', 'local');
-
+        //$path = $request->file('filesupload')->store('uploads', 'local');
+        $file = $request->file('filesupload');
+        $originalExtension = $file->getClientOriginalExtension(); //Ensure that original extension is retained
+        $filename = $file->hashName(); // Laravel's default unique filename
+        // Append the original extension
+        $filenameWithExtension = pathinfo($filename, PATHINFO_FILENAME) . '.' . $originalExtension;
+        $path = $file->storeAs('uploads', $filenameWithExtension, 'local');
+        
         //getFileName
         $fileNameWithExtension = $request->file('filesupload')->getClientOriginalName(); // e.g., example.txt
         $fileNameWithoutExtension = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
@@ -208,8 +214,14 @@ class ApiController extends Controller
         if (!$fileSetting) {
             return response()->json(['message' => 'Terrible Upload Handling', 'fileSetting' => $fileSetting], 501);
         }
-        $path = $request->file('filesupload')->store('uploads', 'local');
-
+        //$path = $request->file('filesupload')->store('uploads', 'local');
+        $file = $request->file('filesupload');
+        $originalExtension = $file->getClientOriginalExtension(); //Ensure that original extension is retained
+        $filename = $file->hashName(); // Laravel's default unique filename
+        // Append the original extension
+        $filenameWithExtension = pathinfo($filename, PATHINFO_FILENAME) . '.' . $originalExtension;
+        $path = $file->storeAs('uploads', $filenameWithExtension, 'local');
+        
         //getFileName
         $fileNameWithExtension = $request->file('filesupload')->getClientOriginalName(); // e.g., example.txt
         $fileNameWithoutExtension = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
