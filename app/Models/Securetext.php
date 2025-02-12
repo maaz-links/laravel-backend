@@ -15,7 +15,7 @@ class Securetext extends Model
 
     public function files_settings()
     {
-        return $this->belongsTo(FilesSettings::class);
+        return $this->belongsTo(FilesSettings::class,'setting_id');
     }
 
     protected function content(): Attribute //productName == product_name

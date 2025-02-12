@@ -2,9 +2,10 @@
 
 namespace App\Providers;
 
-use App\Services\LogService;
-use App\Services\LogServiceInt;
-use Illuminate\Pagination\Paginator;
+//use App\Services\LogService;
+//use App\Services\LogServiceInt;
+//use Illuminate\Pagination\Paginator;
+use App\Services\CommonService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(LogServiceInt::class, LogService::class);
+        //$this->app->singleton(LogServiceInt::class, LogService::class);
+        $this->app->singleton(CommonService::class, function ($app){
+            return new CommonService();
+        });
     }
 
     /**
@@ -23,6 +27,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
-        Paginator::useBootstrapFive();
+        //Paginator::useBootstrapFive();
     }
 }

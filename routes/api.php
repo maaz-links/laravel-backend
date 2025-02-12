@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\EmailController;
+use App\Http\Controllers\MiscController;
+use App\Http\Controllers\SecuretextController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/send-email', [EmailController::class, 'sendEmail']);
 
 Route::post('/upload/settings',[ApiController::class, 'apiCreateSetting']);
 Route::post('/upload/single',[ApiController::class, 'apiFileUploadSingle']);
@@ -22,33 +27,15 @@ Route::post('/upload/attachments/{given_uid}',[ApiController::class, 'apiShowMul
 Route::delete('/upload/attachsingle/delete/{given_uid}',[ApiController::class, 'apiDeleteOneFile']);
 Route::delete('/upload/attachments/delete/{given_uid}',[ApiController::class, 'apiDeleteMultipleFiles']);
 
-Route::get('/upload/mirrorsexpiry',[ApiController::class, 'apiGetMirrorsExpiry']);
+Route::get('/upload/mirrorsexpiry',[MiscController::class, 'apiGetMirrorsExpiry']);
 
-Route::post('/upload/textupload',[ApiController::class, 'apiTextUpload']);
-Route::post('/upload/showtexts',[ApiController::class, 'apiShowTexts']);
-Route::post('/upload/showtexts/{given_uid}',[ApiController::class, 'apiShowTexts']);
-Route::delete('/upload/showtexts/delete/{given_uid}',[ApiController::class, 'apiDeleteTexts']);
+Route::post('/upload/textupload',[SecuretextController::class, 'apiTextUpload']);
+Route::post('/upload/showtexts',[SecuretextController::class, 'apiShowTexts']);
+Route::post('/upload/showtexts/{given_uid}',[SecuretextController::class, 'apiShowTexts']);
+Route::delete('/upload/showtexts/delete/{given_uid}',[SecuretextController::class, 'apiDeleteTexts']);
 
-Route::delete('/upload/cleardata',[ApiController::class, 'apiCleardata']);
-Route::delete('/upload/cleardata/{limit}',[ApiController::class, 'apiCleardata']);
+Route::delete('/upload/cleardata',[MiscController::class, 'apiCleardata']);
+Route::delete('/upload/cleardata/{limit}',[MiscController::class, 'apiCleardata']);
 
-Route::get('/files/{filename}', function ($filename, Request $request) {
-    $path = storage_path("app/private/uploads/{$filename}");
-    if (!file_exists($path)) {
-        abort(404, "File not found.");
-    }
-    return response()->file($path);
-});
-Route::get('/thumbnails/{filename}', function ($filename, Request $request) {
-    $directory = storage_path("app/private/uploads/thumbnails/");
-    $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
-
-    // Scan the directory for matching files (any extension)
-    $matchingFiles = glob("{$directory}{$filenameWithoutExt}.*");
-    if (empty($matchingFiles)) {
-        abort(404, "File not found.");
-    }
-    // Get the first matching file
-    $path = $matchingFiles[0];
-    return response()->file($path);
-});
+Route::get('/files/{filename}', [MiscController::class, 'BringFile']);
+Route::get('/thumbnails/{filename}', [MiscController::class, 'BringThumbnail']);
