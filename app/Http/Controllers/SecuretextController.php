@@ -7,6 +7,8 @@ use App\Models\Securetext;
 use App\Services\CommonService;
 use Illuminate\Http\Request;
 use Validator;
+use HTMLPurifier;
+use HTMLPurifier_Config;
 
 class SecuretextController extends Controller
 {
@@ -35,11 +37,19 @@ class SecuretextController extends Controller
         $final_uid = $this->apiService->ApiControllerCheckUid($request->uid);
         $final_ip = $this->apiService->ApiControllerCheckIp($request);
 
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('Cache.SerializerPath', storage_path('app/htmlpurifier'));
+        //make sure this dirsctory exists, and
+        //sudo chown -R admin1:www-data /storage/app/htmlpurifier
+        $purifier = new HTMLPurifier($config);
+
+        // Purify the HTML input
+        $cleanHtml = $purifier->purify($request->textupload);
         $storedsettings = $this->apiService->storeFileSettings($request, $final_uid, $final_ip, 1);
 
         //Remember, files are encrypted and decrypted in Securetext Model
         Securetext::create([
-            'content' => $request->textupload,
+            'content' => $cleanHtml,
             'setting_id' => $storedsettings->id,
         ]);
 

@@ -20,7 +20,7 @@
                 </div>
                 <div>
                     {{-- <a href="{{ route('securemirrors.show', $securemirror->id) }}" class="btn btn-primary btn-sm me-2">View</a> --}}
-                    {{-- <a href="{{ route('securemirrors.edit', $securemirror->id) }}" class="btn btn-warning btn-sm me-2">Edit</a> --}}
+                    <a href="{{ route('securemirrors.edit', $securemirror->id) }}" class="btn btn-warning btn-sm me-2">Edit</a>
                     <form action="{{ route('securemirrors.destroy', $securemirror->id) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')

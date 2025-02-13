@@ -52,7 +52,7 @@ class MiscController extends Controller
     public function apiGetMirrorsExpiry(Request $request)
     {
         $securemirrors = Securemirror::get();
-        $expirationduration = Expirationduration::get();
+        $expirationduration = Expirationduration::orderBy('duration')->get();
         return response()->json(['mirror' => $securemirrors, 'expire' => $expirationduration], 200);
     }
     

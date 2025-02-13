@@ -1,19 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Edit Secure Mirror</title>
-</head>
-<body>
+@extends('adminlte::page')
+
+@section('title', 'Create Mirror')
+
+@section('content_header')
     <h1>Edit Secure Mirror</h1>
+@stop
+
+@section('content')
+<div class="container my-5">
+    {{-- <h1 class="mb-4">Create Secure Mirror</h1> --}}
     <form action="{{ route('securemirrors.update', $securemirror->id) }}" method="POST">
         @csrf
         @method('PUT')
-        <label for="title">Title:</label>
-        <input type="text" name="title" value="{{ $securemirror->title }}" required><br>
-        <label for="domain">Domain:</label>
-        <input type="text" name="domain" value="{{ $securemirror->domain }}" required><br>
-        <button type="submit">Update</button>
+        <div class="mb-3">
+            <label for="title" class="form-label">Title:</label>
+            <input type="text" name="title" id="title" value="{{ $securemirror->title }}" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="domain" class="form-label">Domain:</label>
+            <input type="text" name="domain" id="domain"  value="{{ $securemirror->domain }}" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+        <a class="btn btn-success" href="{{ route('securemirrors.index') }}">Back to List</a>
     </form>
-</body>
-</html>
+</div>
+@stop
+
+@section('css')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+@stop
+
+@section('js')
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.min.js"></script>
+    <script> console.log("Hi, I'm using the Laravel-AdminLTE package!"); </script>
+    <script
+			  src="https://code.jquery.com/jquery-3.7.1.slim.js"
+			  integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc="
+			  crossorigin="anonymous"></script>
+@stop

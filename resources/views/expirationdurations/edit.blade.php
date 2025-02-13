@@ -7,17 +7,25 @@
 @stop
 
 @section('content')
-<form action="{{ route('expirationdurations.update', $expirationDuration->id) }}" method="POST">
-    @csrf
-    @method('PUT')
-    <label for="title">Title</label>
-    <input type="text" name="title" id="title" value="{{ old('title', $expirationDuration->title) }}" required>
-
-    <label for="duration">Duration (minutes)</label>
-    <input type="number" name="duration" id="duration" value="{{ old('duration', $expirationDuration->duration) }}" required min="1">
-
-    <button type="submit">Update Expiration Duration</button>
-</form>
+<div class="container my-5">
+    {{-- <h1 class="mb-4">Create Secure Mirror</h1> --}}
+    <form action="{{ route('expirationdurations.update', $expirationDuration->id) }}" method="POST">
+        @csrf
+        @method('PUT')
+        <div class="mb-3">
+            <label for="title" class="form-label">Title:</label>
+            <input type="text" name="title" id="title" value="{{ old('title', $expirationDuration->title) }}" class="form-control" required>
+        
+        </div>
+        <div class="mb-3">
+            <label for="domain" class="form-label">Duration: (minutes)</label>
+            <input type="number" name="duration" id="duration" value="{{ old('duration', $expirationDuration->duration) }}" class="form-control" required min="1">
+        
+        </div>
+        <button type="submit" class="btn btn-success">Save</button>
+        <a class="btn btn-success" href="{{ route('expirationdurations.index') }}">Back to List</a>
+    </form>
+</div>
 @stop
 
 @section('css')
