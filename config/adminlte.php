@@ -343,6 +343,11 @@ return [
             'url' => '/expirationdurations',
             'icon' => 'far fa-fw fa-file',
         ],
+        [
+            'text' => 'Mail Settings',
+            'url' => '/mail-settings',
+            'icon' => 'far fa-fw fa-file',
+        ],
         // [
         //     'text' => 'profile',
         //     'url' => 'admin/settings',
