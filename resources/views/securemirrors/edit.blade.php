@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Create Mirror')
+@section('title', 'Mirrors')
 
 @section('content_header')
     <h1>Edit Secure Mirror</h1>

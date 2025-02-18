@@ -4,7 +4,7 @@ use App\Http\Controllers\MailSettingController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ExpirationDurationController;
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');//view('welcome');
 });
 
 //FOR API ROUTES TESTING

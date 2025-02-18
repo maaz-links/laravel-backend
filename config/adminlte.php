@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'title' => 'AdminLTE 3',
+    'title' => 'FilePad',
     'title_prefix' => '',
     'title_postfix' => '',
 
@@ -30,7 +30,7 @@ return [
     |
     */
 
-    'use_ico_only' => false,
+    'use_ico_only' => true,
     'use_full_favicon' => false,
 
     /*
@@ -63,9 +63,9 @@ return [
     |
     */
 
-    'logo' => '<b>Admin</b>LTE',
-    'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-    'logo_img_class' => 'brand-image img-circle elevation-3',
+    'logo' => '<b>FilePad</b>',
+    'logo_img' => '../../favicon.png',//'vendor/adminlte/dist/img/AdminLTELogo.png',
+    'logo_img_class' => 'brand-image',//'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
     'logo_img_alt' => 'Admin Logo',
@@ -84,14 +84,14 @@ return [
     */
 
     'auth_logo' => [
-        'enabled' => false,
-        'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'Auth Logo',
-            'class' => '',
-            'width' => 50,
-            'height' => 50,
-        ],
+        'enabled' => true,//false,
+        // 'img' => [
+        //     'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
+        //     'alt' => 'Auth Logo',
+        //     'class' => '',
+        //     'width' => 50,
+        //     'height' => 50,
+        // ],
     ],
 
     /*
@@ -110,7 +110,7 @@ return [
     */
 
     'preloader' => [
-        'enabled' => true,
+        'enabled' => false,
         'mode' => 'fullscreen',
         'img' => [
             'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',

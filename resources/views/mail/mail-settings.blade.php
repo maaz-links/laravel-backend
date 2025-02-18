@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Create Mirror')
+@section('title', 'Mail Settings')
 
 @section('content_header')
     <h1>Edit Mail Settings</h1>

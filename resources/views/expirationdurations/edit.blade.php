@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'ExpirationDuration')
+@section('title', 'Expiration Duration')
 
 @section('content_header')
     <h1>Expiration Duration</h1>
