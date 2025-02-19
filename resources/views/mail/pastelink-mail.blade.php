@@ -6,7 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 </head>
 <body>
-    <h3>{{$subject}}</h3>
-    <p>{{$mailmessage}}</p>
+    {!! $mailmessage !!}
 </body>
 </html>

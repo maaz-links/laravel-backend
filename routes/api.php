@@ -27,7 +27,7 @@ Route::post('/upload/attachments/{given_uid}',[ApiController::class, 'apiShowMul
 Route::delete('/upload/attachsingle/delete/{given_uid}',[ApiController::class, 'apiDeleteOneFile']);
 Route::delete('/upload/attachments/delete/{given_uid}',[ApiController::class, 'apiDeleteMultipleFiles']);
 
-Route::get('/upload/mirrorsexpiry',[MiscController::class, 'apiGetMirrorsExpiry']);
+Route::get('/miscdata',[MiscController::class, 'apiGetMiscData']);
 
 Route::post('/upload/textupload',[SecuretextController::class, 'apiTextUpload']);
 Route::post('/upload/showtexts',[SecuretextController::class, 'apiShowTexts']);

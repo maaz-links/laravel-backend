@@ -49,11 +49,23 @@ class MiscController extends Controller
         return response()->json(['success' => $success,'failed' => $failed], 200);
     }
 
-    public function apiGetMirrorsExpiry(Request $request)
+    public function apiGetMiscData(Request $request)
     {
+        //dd(ini_get('post_max_size'));
         $securemirrors = Securemirror::get();
         $expirationduration = Expirationduration::orderBy('duration')->get();
-        return response()->json(['mirror' => $securemirrors, 'expire' => $expirationduration], 200);
+        
+        $upload_onefilemax = config('upload.onefile.maxmb') ?: 2;
+        $upload_multifilemax = config('upload.multifile.maxmb') ?: 10;
+        $upload_onefilemax = (int) $upload_onefilemax * 1024 * 1024;
+        $upload_multifilemax = (int) $upload_multifilemax * 1024 * 1024;
+
+        return response()->json([
+            'mirror' => $securemirrors, 
+            'expire' => $expirationduration,
+            'upload_onefilemax' => $upload_onefilemax,
+            'upload_multifilemax' => $upload_multifilemax,
+        ], 200);
     }
     
 }

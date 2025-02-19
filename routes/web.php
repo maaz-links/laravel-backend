@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ConfigController;
 use App\Http\Controllers\MailSettingController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ExpirationDurationController;
@@ -33,5 +34,10 @@ Route::resource('securemirrors', App\Http\Controllers\MirrorController::class);
 // PUT /securemirrors/{id} – To update a secure mirror.
 // DELETE /securemirrors/{id} – To delete a secure mirror.
 
-Route::get('mail-settings', [MailSettingController::class, 'index'])->name('mail-settings');
-Route::post('mail-settings', [MailSettingController::class, 'update'])->name('mail-settings.update');
+
+Route::get('/configs', [ConfigController::class, 'index'])->name('configs.index');
+Route::get('/configs/create', [ConfigController::class, 'create'])->name('configs.create');
+Route::post('/configs', [ConfigController::class, 'store'])->name('configs.store');
+Route::get('/configs/{mail_config}/edit', [ConfigController::class, 'edit'])->name('configs.edit');
+Route::put('/configs/{mail_config}', [ConfigController::class, 'update'])->name('configs.update');
+Route::delete('/configs/{mail_config}', [ConfigController::class, 'destroy'])->name('configs.destroy');

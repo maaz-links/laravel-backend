@@ -43,9 +43,12 @@ class EmailController extends Controller
         $ccEmails = $validEmails; // Remaining emails as CC
 
         //$toEmail = $request->recipient;
-        $subject = $request->subject ? $request->subject : "Link for encrypted data";
-        $message = "Your Pastelink is " . $request->pastelink;
-
+        $subject = config('mail.customize.subject') ?: "Link for encrypted data";
+        $message = config('mail.customize.body') ?: "Your Pastelink is {link}";
+        if(true){
+            $message = str_replace("{link}", $request->pastelink, $message);
+        }
+        //dd($subject,$message);
         Mail::to($toEmail)->cc($ccEmails)->send(new pastelinkmail($message, $subject));
 
     }

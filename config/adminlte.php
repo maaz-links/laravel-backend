@@ -344,8 +344,8 @@ return [
             'icon' => 'far fa-fw fa-file',
         ],
         [
-            'text' => 'Mail Settings',
-            'url' => '/mail-settings',
+            'text' => 'Configuration',
+            'url' => '/configs',
             'icon' => 'far fa-fw fa-file',
         ],
         // [
