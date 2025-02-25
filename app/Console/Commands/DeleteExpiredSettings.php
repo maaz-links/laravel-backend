@@ -26,11 +26,24 @@ class DeleteExpiredSettings extends Command
      */
     public function handle()
     {
-        $Setting = FilesSettings::where('expiry_date', '<', time())->get();
+        // $Setting = FilesSettings::where('expiry_date', '<', time())->get();
+        // foreach ($Setting as $s) {
+        //     $this->info('Deleting' . $s->id);
+        //     $this->info(date('Y-m-d h:i:s', $s->expiry_date) . " < " . date('Y-m-d h:i:s'));
+        //     $s->delete();
+        // }
+        $Setting = FilesSettings::all();
         foreach ($Setting as $s) {
-            $this->info('Deleting' . $s->id);
-            $this->info(date('Y-m-d h:i:s', $s->expiry_date) . " < " . date('Y-m-d h:i:s'));
-            $s->delete();
+            if ($s->expiry_date < time()) {
+                $this->info('Deleting' . $s->id);
+                $this->info(date('Y-m-d h:i:s', $s->expiry_date) . " < " . date('Y-m-d h:i:s'));
+                $s->delete();
+            } else if (!$s->securefile()->count() && !$s->securetext()->count()) { //If settings is empty
+                $this->info('Deleting' . $s->id);
+                $this->info('no association');
+                $s->delete();
+            }
         }
+
     }
 }

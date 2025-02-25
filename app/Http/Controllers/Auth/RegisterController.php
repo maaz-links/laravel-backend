@@ -38,6 +38,12 @@ class RegisterController extends Controller
     public function __construct()
     {
         $this->middleware('guest');
+        $this->middleware(function(\Illuminate\Http\Request $request, \Closure $next){
+            if(User::count() > 0){
+                return redirect('/login');
+            }
+            return $next($request);
+        });
     }
 
     /**
