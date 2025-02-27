@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FilesSettings;
 use App\Models\Securefile;
+use App\Models\Securetext;
 use App\Services\CommonService;
 use File;
 use Illuminate\Http\Request;
@@ -296,6 +297,7 @@ class ApiController extends Controller
             'settinguid' => $fileSetting->uid,
             'expiry' => $fileSetting->expiry_date,
             'burn_after_read' => $fileSetting->burn_after_read,
+            'type' => $fileSetting->type,
         ], 200);
     }
 
@@ -314,6 +316,7 @@ class ApiController extends Controller
             'settinguid' => $fileUID->files_settings->uid,
             'expiry' => $fileUID->files_settings->expiry_date,
             'burn_after_read' => $fileUID->file_burn_after_read,
+            'type' => $fileUID->files_settings->type,
         ], 200);
         
     }
@@ -336,9 +339,24 @@ class ApiController extends Controller
         }
     }
 
-    public function apiPreviewFiles(Request $request, $given_uid = null)
+    public function apiPreview(Request $request, $given_uid = null)
     {
-        $data = $this->apiService->fetchData(Securefile::class, $given_uid);
+        $fileSetting = FilesSettings::where('uid', '=', $given_uid)->first();
+        if (!$fileSetting) {
+            return response()->json(['message' => 'UID doesnt exist'], 404);
+        }
+        $data = [];
+        switch ($fileSetting->type) {
+            case 1:
+                $data = $this->apiService->fetchData(Securetext::class, $given_uid);
+                break;
+            case 2:
+                $data = $this->apiService->fetchData(Securefile::class, $given_uid);
+                break;
+            default:
+                # code...
+                break;
+        }
         return response()->json(['data' => $data], 200);
     }
 

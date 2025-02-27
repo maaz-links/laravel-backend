@@ -13,7 +13,7 @@ Route::post('/upload/single',[ApiController::class, 'apiFileUploadSingle']);
 Route::post('/upload/multiple',[ApiController::class, 'apiFileUploadMultiple']);
 Route::post('/upload/attachments',[ApiController::class, 'apiShowFiles']);
 
-Route::post('/upload/attachments/preview/{given_uid}',[ApiController::class, 'apiPreviewFiles']);
+Route::post('/upload/preview/{given_uid}',[ApiController::class, 'apiPreview']);
 Route::put('/upload/titles',[ApiController::class, 'apiUpdateTitles']);
 Route::post('/upload/editsingle/{given_uid}',[ApiController::class, 'apiUpdateOneFile']);
 
