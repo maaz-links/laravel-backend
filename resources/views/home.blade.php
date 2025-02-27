@@ -26,8 +26,9 @@
         <thead>
         <tr>
             <th scope="col">IP</th>
-            <th scope="col">Uid</th>
-            <th scope="col">DateTime</th>
+            <th scope="col">UID</th>
+            <th scope="col">Upload Date</th>
+            <th scope="col">Burn after Read</th>
             <th scope="col">Type</th>
             <th scope="col"># of files</th>
             <th scope="col">Content</th>
@@ -41,6 +42,11 @@
                 <td>{{$sett->ip}}</td>
                 <td>{{$sett->uid}}</td>
                 <td>{{$sett->created_at}}</td>
+                @if ($sett->burn_after_read > 0)
+                    <td>Yes</td>
+                    @else
+                    <td>No</td>
+                    @endif
                 <td>{{$sett->typeintext}}</td>
                     @if ($sett->type == 2)
                     <td>{{count($sett->content)}}</td>
@@ -192,7 +198,7 @@
                                 const fileId = file.id;
                                 const fileName = fileUrl.split("/").pop(); // Extract file name
                                 const fileExtension = fileName.split(".").pop().toLowerCase(); // Extract file extension
-                                const fileUID = file.file_uid
+                                const fileUID = file.title
                                 
                                 //thumbnailSrc = (fileUrl == fileThumbnail) ? `api/files/${fileName}`:`api/thumbnails/${fileName}`;
                                 // Check if it's an image file
@@ -206,7 +212,7 @@
                                 <a href="download/${fileId}" target="_blank">
                                     <img src="thumbnail/${fileId}" alt="${fileUID}" class="img-thumbnail" style="width: 80px; height: 80px;">
                                 </a>
-                                <p class="small">UID:<br> ${fileUID}</p>
+                                <p class="small" style="max-width:5.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap ">${fileUID}</p>
                             </div>
                         `;
                                 } else {
@@ -219,7 +225,7 @@
                                         <i class="bi bi-file-earmark"></i>
                                     </div>
                                 </a>
-                                <p class="small">UID:<br> ${fileUID}</p>
+                                <p class="small" style="max-width:5.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap ">${fileUID}</p>
                             </div>
                         `;
                                 }

@@ -33,7 +33,7 @@ class HomeController extends Controller
         foreach ($settings as $s) {
             if ($s->type == 2) {
                 $s->content = 
-                Securefile::select('securefile.id', 'securefile.file_detail', 'securefile.thumbnail', 'securefile.file_uid')
+                Securefile::select('securefile.id', 'securefile.file_detail', 'securefile.thumbnail', 'securefile.file_uid', 'securefile.title')
                 ->where('setting_id', '=', $s->id)->get()->toArray();
             } else if ($s->type == 1) {
                 $s->content = 

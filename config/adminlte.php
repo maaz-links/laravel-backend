@@ -64,7 +64,7 @@ return [
     */
 
     'logo' => '<b>FilePad</b>',
-    'logo_img' => '../../favicon.png',//'vendor/adminlte/dist/img/AdminLTELogo.png',
+    'logo_img' => 'favicons/favicon.ico',//'vendor/adminlte/dist/img/AdminLTELogo.png',
     'logo_img_class' => 'brand-image',//'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
