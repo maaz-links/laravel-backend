@@ -25,6 +25,8 @@ Route::get('expirationdurations/{id}/edit', [ExpirationDurationController::class
 Route::put('expirationdurations/{id}', [ExpirationDurationController::class, 'update'])->name('expirationdurations.update');
 Route::delete('expirationdurations/{id}', [ExpirationDurationController::class, 'destroy'])->name('expirationdurations.destroy');
 
+Route::post('expirationdurations/unlimited', [ExpirationDurationController::class, 'unlimitedChange'])->name('expirationdurations.unlimited');
+
 Route::resource('securemirrors', App\Http\Controllers\MirrorController::class);
 // GET /securemirrors – To view all secure mirrors.
 // GET /securemirrors/create – To create a new secure mirror.

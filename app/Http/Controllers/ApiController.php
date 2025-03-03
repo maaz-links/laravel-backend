@@ -97,7 +97,7 @@ class ApiController extends Controller
         }
         Securefile::create([
             'file_burn_after_read' => $fileSetting->burn_after_read,
-            'title' => $fileNameWithoutExtension,
+            'title' => $fileNameWithExtension,
             'file_uid' => str()->random(8),
             'file_detail' => $path,
             'setting_id' => $fileSetting->id,
@@ -166,7 +166,7 @@ class ApiController extends Controller
         }
         $olddata->update([
             //'file_burn_after_read' => $fileSetting->burn_after_read,
-            'title' => $fileNameWithoutExtension,
+            'title' => $fileNameWithExtension,
             //'file_uid' => str()->random(8),
             'file_detail' => $path,
             //'setting_id' => $fileSetting->id,

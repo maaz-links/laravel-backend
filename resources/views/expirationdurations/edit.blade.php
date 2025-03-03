@@ -3,23 +3,26 @@
 @section('title', 'Expiration Duration')
 
 @section('content_header')
-    <h1>Expiration Duration</h1>
+    <h1>Edit Expiration Duration</h1>
 @stop
 
 @section('content')
 <div class="container my-5">
-    {{-- <h1 class="mb-4">Create Secure Mirror</h1> --}}
+    @foreach ($errors->all() as $error)
+            <div class="mt-3 alert alert-danger"><li>{{ $error }}</li>
+            </div>
+        @endforeach
     <form action="{{ route('expirationdurations.update', $expirationDuration->id) }}" method="POST">
         @csrf
         @method('PUT')
-        <div class="mb-3">
+        {{-- <div class="mb-3">
             <label for="title" class="form-label">Title:</label>
             <input type="text" name="title" id="title" value="{{ old('title', $expirationDuration->title) }}" class="form-control" required>
         
-        </div>
+        </div> --}}
         <div class="mb-3">
             <label for="domain" class="form-label">Duration: (minutes)</label>
-            <input type="number" name="duration" id="duration" value="{{ old('duration', $expirationDuration->duration) }}" class="form-control" required min="1">
+            <input type="number" name="duration" id="duration" value="{{ old('duration', $expirationDuration->duration) }}" class="form-control" required min="1" max="5256000">
         
         </div>
         <button type="submit" class="btn btn-success">Save</button>

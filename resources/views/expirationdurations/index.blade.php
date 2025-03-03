@@ -5,19 +5,45 @@
 @section('content_header')
     <h1>Expiration Duration</h1>
 @stop
-
 @section('content')
 <div class="container my-5">
-    {{-- <h1 class="mb-4">Secure Mirrors</h1> --}}
-    <a class="btn btn-success mb-4" href="{{ route('expirationdurations.create') }}">Create New Expiration Duration</a>
-    
+    <div class='row'>
+        <div class='col-6'>
+            <a class="btn btn-success mb-4" href="{{ route('expirationdurations.create') }}">Create New Expiration
+                Duration</a>
+        </div>
+        <div class='col-6'>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Unlimited Duration:</strong>
+                    @if ($unlimitstatus)
+                        <span class="text-primary">Enabled</span>
+                    @else
+                        <span class="text-secondary">Disabled</span>
+                    @endif
+                </div>
+                <div>
+                    {{-- <a class="btn btn-warning btn-sm me-2">Edit</a> --}}
+                    <form action="{{ route('expirationdurations.unlimited') }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('POST')
+                        @if ($unlimitstatus)
+                            <button type="submit" class="btn btn-primary btn-sm">Disable</button>
+                        @else
+                            <button type="submit" class="btn btn-primary btn-sm">Enable</button>
+                        @endif
+                    </form>
+                </div>
+            </li>
+        </div>
+    </div>
     <hr>
     <ul class="list-group">
         @foreach($expirationDurations as $expirationDuration)
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                     <strong>{{ $expirationDuration->title }}</strong> 
-                    <span class="text-muted">({{ $expirationDuration->duration }}) minutes</span>
+                    <span class="text-muted">| {{ $expirationDuration->duration }} minutes</span>
                 </div>
                 <div>
                     <a href="{{ route('expirationdurations.edit', $expirationDuration) }}" class="btn btn-warning btn-sm me-2">Edit</a>

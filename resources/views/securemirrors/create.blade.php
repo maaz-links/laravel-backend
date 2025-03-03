@@ -8,7 +8,10 @@
 
 @section('content')
 <div class="container my-5">
-    {{-- <h1 class="mb-4">Create Secure Mirror</h1> --}}
+    @foreach ($errors->all() as $error)
+            <div class="mt-3 alert alert-danger"><li>{{ $error }}</li>
+            </div>
+        @endforeach
     <form action="{{ route('securemirrors.store') }}" method="POST">
         @csrf
         <div class="mb-3">

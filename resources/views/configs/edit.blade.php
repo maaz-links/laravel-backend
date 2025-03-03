@@ -3,14 +3,14 @@
 @section('title', 'Configurations')
 
 @section('content_header')
-    <h1>Configurations</h1>
+    <h1>Edit Configuration</h1>
 @stop
 
 @section('content')
     <div class="container my-5">
-        <h2>Edit Mail Config</h2>
+        {{-- <h2>Edit Mail Config</h2> --}}
         @foreach ($errors->all() as $error)
-            <div class="mt-3 alert alert-danger">{{ session('success') }}<li>{{ $error }}</li>
+            <div class="mt-3 alert alert-danger"><li>{{ $error }}</li>
             </div>
         @endforeach
         <form action="{{ route('configs.update', $mail_config) }}" method="POST">
